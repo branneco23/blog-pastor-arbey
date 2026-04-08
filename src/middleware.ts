@@ -1,62 +1,62 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from './lib/jwt'; // Asegúrate de que lib/jwt use 'jose'
+import { verifyToken } from './lib/jwt'; 
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  // 1. Proteger rutas de Administración (/admin y subrutas)
-  if (pathname.startsWith('/admin')) {
-    
-    // Si no hay token, enviamos al login
+  // 1. Definir rutas que queremos proteger
+  const isAdminPath = pathname.startsWith('/admin');
+  const isAdminApi = pathname.startsWith('/api/admin');
+
+  if (isAdminPath || isAdminApi) {
+    // Si no hay token en las cookies
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      // Si es una API, respondemos con JSON
+      if (isAdminApi) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+      // Si es una página, redirigimos al Home (ya que usas un Modal, no una página /login)
+      return NextResponse.redirect(new URL('/', request.url));
     }
 
     try {
       const payload = await verifyToken(token);
 
-      // Si el token no es válido o el usuario NO es administrador
+      // Si el token no es válido o NO es admin
       if (!payload || payload.role !== 'admin') {
-        // Redirigir al home si es un usuario normal intentando entrar al panel
+        if (isAdminApi) {
+          return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
+        }
         return NextResponse.redirect(new URL('/', request.url));
       }
-      
-      // Si es admin y el token es válido, permitimos el paso
+
+      // Todo bien, continúa
       return NextResponse.next();
 
     } catch (error) {
-      // Si el token expiró o es corrupto, borramos la cookie y al login
-      const response = NextResponse.redirect(new URL('/login', request.url));
+      // Token corrupto o expirado
+      console.error("Middleware Auth Error:", error);
+      const response = isAdminApi 
+        ? NextResponse.json({ error: 'Sesión expirada' }, { status: 401 })
+        : NextResponse.redirect(new URL('/', request.url));
+      
       response.cookies.delete('token');
       return response;
-    }
-  }
-
-  // 2. Ejemplo: Proteger APIs sensibles (Opcional pero recomendado)
-  // Si tienes rutas de API que solo el admin puede tocar
-  if (pathname.startsWith('/api/admin')) {
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-    const payload = await verifyToken(token);
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
     }
   }
 
   return NextResponse.next();
 }
 
-// Configuración del Matcher: Define dónde se activa el middleware
+// Configuración del Matcher optimizada
 export const config = {
   matcher: [
     /*
-     * Excluimos explícitamente las rutas de auth para evitar 404 o bloqueos
+     * Coincidir con todas las rutas de administración y APIs de admin
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
     '/admin/:path*',
-    '/api/admin/:path*'
+    '/api/admin/:path*',
   ],
 };

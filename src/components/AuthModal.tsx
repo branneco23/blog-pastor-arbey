@@ -12,7 +12,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,118 +36,126 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
       const data = await response.json();
 
+      // Dentro de tu AuthModal.tsx, en la parte donde el login es exitoso:
       if (response.ok) {
         if (isLogin) {
-          // 1. Guardamos los datos para que el Navbar los detecte
-          localStorage.setItem('user_data', JSON.stringify({ 
-            name: data.name, 
-            role: data.role 
-          }));
-          
-          // 2. Disparamos un evento para avisar al Navbar en tiempo real
-          window.dispatchEvent(new Event('storage'));
+          // 1. Guardar en localStorage (para el Navbar)
+          localStorage.setItem('user_data', JSON.stringify({ name: data.name, role: data.role }));
 
+          // 2. NUEVO: Guardar en Cookies (para el Middleware/Redirección)
+          // Esto expira en 7 días
+          document.cookie = `user_role=${data.role}; path=/; max-age=${7 * 24 * 60 * 60}`;
+
+          window.dispatchEvent(new Event('storage'));
           onClose();
 
-          // 3. Redirección basada en privilegios
+          // 3. Redirigir
           if (data.role === 'admin') {
-            router.push('/admin/blogs');
-          } else {
-            router.refresh();
+            window.location.href = '/admin/blogs'; // Usar window.location asegura una limpieza de estado
           }
-        } else {
-          alert("Cuenta creada con éxito. ¡Ya puedes iniciar sesión!");
-          setIsLogin(true);
         }
       } else {
-        alert(data.error || "Algo salió mal");
+        alert(data.error || "Ocurrió un error en la autenticación");
       }
     } catch (err) {
-      alert("Error de conexión con el servidor");
+      alert("Error de conexión. Revisa tu internet e intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Función para resetear el formulario al cambiar entre Login/Registro
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setFormData({ name: '', email: '', password: '' });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative border border-white/20 animate-in fade-in zoom-in duration-300">
-        
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition">
-          <X size={20} className="text-slate-500" />
+      <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative border border-white/20">
+
+        {/* Botón Cerrar */}
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"
+        >
+          <X size={20} />
         </button>
 
-        <div className="p-8">
+        <div className="p-10">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
-              {isLogin ? '¡Qué alegría verte!' : 'Crea tu cuenta'}
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+              {isLogin ? '¡Bienvenido!' : 'Crea tu cuenta'}
             </h2>
-            <p className="text-slate-500 mt-2 text-sm">
-              {isLogin ? 'Ingresa para participar en la comunidad' : 'Regístrate para comentar y reaccionar'}
+            <p className="text-slate-500 mt-2 text-sm font-medium">
+              {isLogin ? 'Ingresa para gestionar las enseñanzas' : 'Regístrate para participar en la comunidad'}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="relative">
-                <User className="absolute left-3 top-3 text-slate-400" size={20} />
-                <input 
-                  type="text" 
-                  placeholder="Tu nombre completo" 
-                  required 
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  required
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
             )}
-            
+
             <div className="relative">
-              <Mail className="absolute left-3 top-3 text-slate-400" size={20} />
-              <input 
-                type="email" 
-                placeholder="correo@ejemplo.com" 
-                required 
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="email"
+                placeholder="correo@ejemplo.com"
+                required
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-3 text-slate-400" size={20} />
-              <input 
-                type="password" 
-                placeholder="Tu contraseña" 
-                required 
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="password"
+                placeholder="Tu contraseña"
+                required
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 disabled:bg-slate-400"
+              className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:shadow-none mt-4"
             >
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  Procesando...
+                  <span>Cargando...</span>
                 </>
               ) : (
-                isLogin ? 'Entrar ahora' : 'Crear mi cuenta'
+                <span>{isLogin ? 'INICIAR SESIÓN' : 'REGISTRARME'}</span>
               )}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-600">
-              {isLogin ? '¿Aún no tienes cuenta?' : '¿Ya tienes una cuenta?'}
-              <button 
+          <div className="mt-8 text-center border-t border-slate-50 pt-6">
+            <p className="text-sm text-slate-500 font-medium">
+              {isLogin ? '¿No tienes una cuenta aún?' : '¿Ya eres parte de nosotros?'}
+              <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={toggleAuthMode}
                 className="ml-2 text-blue-600 font-bold hover:underline"
               >
-                {isLogin ? 'Regístrate' : 'Inicia sesión'}
+                {isLogin ? 'Crea una aquí' : 'Entra aquí'}
               </button>
             </p>
           </div>
