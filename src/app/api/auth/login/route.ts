@@ -1,64 +1,55 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { User } from "@/models/Schema"; // Usando tu modelo Schema
+import { User } from "@/models/Schema"; 
 import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/jwt";
-import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    // 1. Conexión a la base de datos
     await connectDB();
 
     const { email, password } = await req.json();
 
-    // 2. Buscar usuario (usamos select('+password') por si lo tienes oculto en el schema)
+    // 1. Buscar usuario
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return NextResponse.json(
         { error: "Credenciales inválidas" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
-    // 3. Verificar si el usuario está activo (Importante para tu control de usuarios)
+    // 2. Verificar estado de cuenta
     if (user.status === "suspended") {
       return NextResponse.json(
         { error: "Tu cuenta ha sido suspendida. Contacta al administrador." },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
-    // 4. Comparar contraseñas
+    // 3. Comparar contraseñas
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
         { error: "Credenciales inválidas" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
-    // 5. Crear el Token firmado con la lógica de lib/jwt.ts
+    // 4. Crear el Token JWT
     const token = await createToken({
       id: user._id.toString(),
       role: user.role,
       email: user.email,
     });
 
-    // 6. Configurar la Cookie (Usando la sintaxis moderna de Next.js)
-    const cookieStore = await cookies();
-    cookieStore.set("token", token, {
-      httpOnly: true, // Bloquea acceso desde JavaScript (Protección XSS)
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24, // Expira en 24 horas
-      sameSite: "lax",
-    });
-
-    // 7. Respuesta exitosa con datos de sesión para el Contexto de React
-    return NextResponse.json({
+    // 5. Crear la respuesta y adjuntar la Cookie
+    // Usamos esta forma porque es la más compatible con el Middleware en Next.js App Router
+    const response = NextResponse.json({
       message: "Bienvenido de nuevo",
+      name: user.name, // Importante: Enviamos el nombre directamente
+      role: user.role, // Importante: Enviamos el rol directamente
       user: {
         id: user._id,
         role: user.role,
@@ -67,21 +58,21 @@ export async function POST(req: Request) {
       },
     });
 
-    // Ejemplo de lo que debe ir en tu API de Login
-    const response = NextResponse.json({ name: user.name, role: user.role });
     response.cookies.set("token", token, {
-      httpOnly: true, // Por seguridad
+      httpOnly: true, 
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 1 semana
       path: "/",
     });
+
     return response;
+
   } catch (error: any) {
     console.error("Login Error:", error.message);
     return NextResponse.json(
       { error: "Error interno en el proceso de autenticación" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

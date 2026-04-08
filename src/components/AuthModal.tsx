@@ -37,21 +37,24 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const data = await response.json();
 
       // Dentro de tu AuthModal.tsx, en la parte donde el login es exitoso:
+      // Dentro de handleSubmit en AuthModal.tsx
       if (response.ok) {
         if (isLogin) {
-          // 1. Guardar en localStorage (para el Navbar)
-          localStorage.setItem('user_data', JSON.stringify({ name: data.name, role: data.role }));
-
-          // 2. NUEVO: Guardar en Cookies (para el Middleware/Redirección)
-          // Esto expira en 7 días
-          document.cookie = `user_role=${data.role}; path=/; max-age=${7 * 24 * 60 * 60}`;
+          // Guardamos para el Navbar
+          localStorage.setItem('user_data', JSON.stringify({
+            name: data.name,
+            role: data.role
+          }));
 
           window.dispatchEvent(new Event('storage'));
           onClose();
 
-          // 3. Redirigir
           if (data.role === 'admin') {
-            window.location.href = '/admin/blogs'; // Usar window.location asegura una limpieza de estado
+            // Usamos window.location.href en lugar de router.push 
+            // para asegurar que el navegador envíe la nueva cookie al servidor
+            window.location.href = '/admin/blogs';
+          } else {
+            window.location.href = '/';
           }
         }
       } else {

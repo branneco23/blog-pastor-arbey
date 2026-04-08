@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Radio, LogIn, LogOut, PlusCircle, BookOpen, LayoutDashboard } from 'lucide-react';
 import AuthModal from './AuthModal';
@@ -7,6 +8,7 @@ import AuthModal from './AuthModal';
 export default function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkUser = () => {
@@ -34,7 +36,7 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          
+
           {/* LOGO E IGLESIA */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden shrink-0">
@@ -75,17 +77,18 @@ export default function Navbar() {
             {/* SECCIÓN DINÁMICA DE SESIÓN / DASHBOARD */}
             {user && user.name ? (
               <div className="flex items-center gap-4 ml-2">
-                
+
                 {/* ACCESOS DE ADMINISTRADOR (Desktop) */}
                 <div className="hidden md:flex items-center gap-3 border-l border-slate-200 pl-4 mr-2">
-                  <Link 
-                    href="/admin/blogs" 
-                    className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-500 hover:text-blue-600 transition tracking-wider"
+                  <Link
+                    href="/admin/blogs"
+                    className={`flex items-center gap-2 p-2 rounded-lg transition ${pathname === '/admin/blogs' ? 'text-blue-600 bg-blue-50' : 'text-slate-500'
+                      }`}
                   >
                     <BookOpen size={16} /> Mis Doctrinas
                   </Link>
-                  <Link 
-                    href="/admin/blogs/nuevo" 
+                  <Link
+                    href="/admin/blogs/nuevo"
                     className="flex items-center gap-2 text-[11px] font-black uppercase bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-600 hover:text-white transition tracking-wider"
                   >
                     <PlusCircle size={16} /> Crear Blog
@@ -103,7 +106,7 @@ export default function Navbar() {
                       {user.role}
                     </span>
                   </div>
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="ml-2 p-1 text-slate-400 hover:text-red-500 transition"
                     title="Cerrar Sesión"
@@ -114,7 +117,7 @@ export default function Navbar() {
               </div>
             ) : (
               /* BOTÓN INICIAR SESIÓN (MODAL) */
-              <button 
+              <button
                 onClick={() => setIsAuthOpen(true)}
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-md shadow-blue-100 hover:bg-blue-700 transition active:scale-95 flex items-center gap-2"
               >
@@ -128,9 +131,9 @@ export default function Navbar() {
       </nav>
 
       {/* COMPONENTE MODAL */}
-      <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
       />
     </>
   );
