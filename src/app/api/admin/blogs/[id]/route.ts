@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Blog } from "@/models/Schema";
-import { verifyToken } from "@/lib/jwt";
-import { cookies } from "next/headers";
+import { NextResponse } from 'next/server';
+import { connectDB } from '@/lib/db';
+import Blog from '@/models/Blog';
+import { verifyToken } from '@/lib/jwt';
+import { cookies } from 'next/headers';
 
 export async function DELETE(
   req: Request,
@@ -10,24 +10,27 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-    const { id } = params;
 
+    // ✅ FIX AQUÍ
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
-    const payload = await verifyToken(token!);
 
-    // Solo eliminamos si el blog pertenece al autor que hace la petición
-    const blog = await Blog.findOneAndDelete({ 
-      _id: id, 
-      authorId: payload.id 
-    });
-
-    if (!blog) {
-      return NextResponse.json({ error: "No encontrado o no autorizado" }, { status: 404 });
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    return NextResponse.json({ message: "Eliminado con éxito" });
+    const payload = await verifyToken(token);
+
+    if (!payload) {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+    }
+
+    await Blog.findByIdAndDelete(params.id);
+
+    return NextResponse.json({ message: "Eliminado correctamente" });
+
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
   }
 }

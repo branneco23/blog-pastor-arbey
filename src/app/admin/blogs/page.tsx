@@ -1,109 +1,157 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { Edit3, Trash2, Plus, Calendar, Clock, Video } from 'lucide-react';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Save, Image as ImageIcon, Type, AlignLeft, Tag } from 'lucide-react';
 import Link from 'next/link';
 
-interface Post {
-  _id: string;
-  title: string;
-  description: string;
-  image: string;
-  category: string;
-  readingTime: string;
-  createdAt: string;
-  videoUrl?: string;
-}
+export default function NuevaDoctrina() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    content: '',
+    image: '',
+    category: 'Doctrina',
+    readingTime: '5 min'
+  });
 
-export default function GestionDoctrinas() {
-  const [blogs, setBlogs] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const cargarBlogs = async () => {
     try {
-      const res = await fetch('/api/admin/blogs');
-      const data = await res.json();
-      // Aquí ya no marcará error porque definimos <Post[]>
-      setBlogs(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error("Error cargando blogs");
+      const res = await fetch('/api/admin/blogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        router.push('/admin/blogs');
+        router.refresh();
+      } else {
+        alert("Error al guardar la doctrina");
+      }
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { cargarBlogs(); }, []);
-
-  const eliminarBlog = async (id: string) => {
-    if (!confirm("¿Deseas eliminar esta enseñanza de la base de datos?")) return;
-    const res = await fetch(`/api/admin/blogs/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setBlogs(blogs.filter((b) => b._id !== id));
-    }
-  };
-
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-    </div>
-  );
-
   return (
-    <div className="max-w-7xl mx-auto p-6 md:p-10">
-      {/* Encabezado estilo Figma */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Todas las Doctrinas</h1>
-          <p className="text-slate-500 font-medium">{blogs.length} doctrinas publicadas</p>
+    <div className="min-h-screen bg-slate-50/50 p-6 md:p-10">
+      <div className="max-w-3xl mx-auto">
+        
+        {/* Encabezado */}
+        <div className="flex items-center justify-between mb-8">
+          <Link 
+            href="/admin/blogs" 
+            className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition"
+          >
+            <ArrowLeft size={20} /> Volver
+          </Link>
+          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+            Nueva Doctrina
+          </h1>
         </div>
-        <Link href="/admin/blogs/nuevo" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-100">
-          <Plus size={20} /> Nueva Doctrina
-        </Link>
-      </div>
 
-      {/* Grid de tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {blogs.map((blog) => (
-          <div key={blog._id} className="bg-white rounded-[24px] border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
-            {/* Imagen con Badge de Categoría */}
-            <div className="relative h-48 w-full">
-              <img src={blog.image} alt="" className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                {blog.category}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 space-y-6">
+            
+            {/* Título */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-black text-slate-700 uppercase tracking-wider">
+                <Type size={16} className="text-blue-600" /> Título de la enseñanza
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium text-slate-900"
+                placeholder="Ej: La importancia de la oración"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+              />
+            </div>
+
+            {/* Categoría y Tiempo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-black text-slate-700 uppercase tracking-wider">
+                  <Tag size={16} className="text-blue-600" /> Categoría
+                </label>
+                <select 
+                  className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-bold text-slate-700"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                >
+                  <option value="Doctrina">Doctrina</option>
+                  <option value="Reflexión">Reflexión</option>
+                  <option value="Estudio">Estudio Bíblico</option>
+                  <option value="Jóvenes">Jóvenes</option>
+                </select>
               </div>
-              {blog.videoUrl && (
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-1.5 rounded-full text-blue-600">
-                  <Video size={14} />
-                </div>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-black text-slate-700 uppercase tracking-wider">
+                  <Clock size={16} className="text-blue-600" /> Tiempo de lectura
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium"
+                  placeholder="Ej: 10 min"
+                  value={formData.readingTime}
+                  onChange={(e) => setFormData({...formData, readingTime: e.target.value})}
+                />
+              </div>
+            </div>
+
+            {/* URL Imagen */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-black text-slate-700 uppercase tracking-wider">
+                <ImageIcon size={16} className="text-blue-600" /> URL de la Imagen
+              </label>
+              <input
+                type="url"
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium"
+                placeholder="https://images.unsplash.com/..."
+                value={formData.image}
+                onChange={(e) => setFormData({...formData, image: e.target.value})}
+              />
+            </div>
+
+            {/* Descripción Corta */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-black text-slate-700 uppercase tracking-wider">
+                <AlignLeft size={16} className="text-blue-600" /> Breve resumen
+              </label>
+              <textarea
+                required
+                rows={3}
+                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium resize-none"
+                placeholder="Escribe un resumen que invite a leer..."
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+              />
+            </div>
+
+            {/* Botón de Guardar */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3 disabled:bg-slate-300"
+            >
+              {loading ? "GUARDANDO..." : (
+                <>
+                  <Save size={20} /> PUBLICAR DOCTRINA
+                </>
               )}
-            </div>
+            </button>
 
-            {/* Contenido de la tarjeta */}
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 leading-tight mb-2 line-clamp-2">
-                {blog.title}
-              </h3>
-              <p className="text-slate-500 text-sm line-clamp-2 mb-4">
-                {blog.description}
-              </p>
-
-              {/* Meta info */}
-              <div className="flex items-center gap-4 text-slate-400 text-[11px] font-semibold uppercase mb-6">
-                <span className="flex items-center gap-1"><Calendar size={14}/> {new Date(blog.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                <span className="flex items-center gap-1"><Clock size={14}/> {blog.readingTime}</span>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="flex gap-2 pt-4 border-t border-slate-50">
-                <Link href={`/admin/blogs/editar/${blog._id}`} className="flex-1 bg-slate-50 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-blue-50 hover:text-blue-600 transition flex items-center justify-center gap-2">
-                  <Edit3 size={14} /> Editar
-                </Link>
-                <button onClick={() => eliminarBlog(blog._id)} className="flex-1 bg-red-50 text-red-500 py-2.5 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition flex items-center justify-center gap-2">
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
-            </div>
           </div>
-        ))}
+        </form>
       </div>
     </div>
   );

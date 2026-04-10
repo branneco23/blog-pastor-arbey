@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Importamos el router de Next
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,15 +9,19 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const router = useRouter();
+  const router = useRouter(); // Inicializamos el router
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -36,38 +40,40 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
       const data = await response.json();
 
-      // Dentro de tu AuthModal.tsx, en la parte donde el login es exitoso:
-      // Dentro de handleSubmit en AuthModal.tsx
       if (response.ok) {
-        if (isLogin) {
-          // Guardamos para el Navbar
-          localStorage.setItem('user_data', JSON.stringify({
-            name: data.name,
-            role: data.role
-          }));
+        // 1. Guardar con validación: Aseguramos que el rol exista
+        const userToSave = {
+          name: data.name,
+          role: data.role || 'user' // Si el backend no manda rol, por defecto es user
+        };
 
-          window.dispatchEvent(new Event('storage'));
-          onClose();
+        localStorage.setItem('user_data', JSON.stringify(userToSave));
 
-          if (data.role === 'admin') {
-            // Usamos window.location.href en lugar de router.push 
-            // para asegurar que el navegador envíe la nueva cookie al servidor
-            window.location.href = '/admin/blogs';
-          } else {
-            window.location.href = '/';
-          }
+        // 2. Eventos de sincronización
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('user-login')); // Evento personalizado para el Navbar
+        
+        onClose();
+
+        // 3. REDIRECCIÓN MEJORADA
+        // Usamos router.push y refresh para que Next.js actualice los permisos del Middleware
+        if (userToSave.role === 'admin') {
+          router.push('/admin/blogs');
+          setTimeout(() => router.refresh(), 100); 
+        } else {
+          router.push('/');
         }
+
       } else {
-        alert(data.error || "Ocurrió un error en la autenticación");
+        alert(data.error || "Ocurrió un error");
       }
     } catch (err) {
-      alert("Error de conexión. Revisa tu internet e intenta de nuevo.");
+      alert("Error de conexión.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para resetear el formulario al cambiar entre Login/Registro
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
     setFormData({ name: '', email: '', password: '' });
@@ -75,12 +81,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative border border-white/20">
-
-        {/* Botón Cerrar */}
+      <div 
+        className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative border border-white/20 animate-in fade-in zoom-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"
+          className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600 z-[101]"
         >
           <X size={20} />
         </button>
@@ -103,7 +110,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   type="text"
                   placeholder="Nombre completo"
                   required
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
@@ -116,7 +123,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 type="email"
                 placeholder="correo@ejemplo.com"
                 required
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -128,7 +135,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 type="password"
                 placeholder="Tu contraseña"
                 required
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -137,30 +144,19 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:shadow-none mt-4"
+              className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:bg-slate-300 mt-4"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>Cargando...</span>
-                </>
-              ) : (
-                <span>{isLogin ? 'INICIAR SESIÓN' : 'REGISTRARME'}</span>
-              )}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <span>{isLogin ? 'INICIAR SESIÓN' : 'REGISTRARME'}</span>}
             </button>
           </form>
 
           <div className="mt-8 text-center border-t border-slate-50 pt-6">
-            <p className="text-sm text-slate-500 font-medium">
-              {isLogin ? '¿No tienes una cuenta aún?' : '¿Ya eres parte de nosotros?'}
-              <button
-                type="button"
-                onClick={toggleAuthMode}
-                className="ml-2 text-blue-600 font-bold hover:underline"
-              >
+            <button type="button" onClick={toggleAuthMode} className="text-sm text-slate-500 font-medium">
+              {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
+              <span className="text-blue-600 font-bold hover:underline">
                 {isLogin ? 'Crea una aquí' : 'Entra aquí'}
-              </button>
-            </p>
+              </span>
+            </button>
           </div>
         </div>
       </div>

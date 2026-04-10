@@ -3,22 +3,30 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from './lib/jwt';
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get('token')?.value;
 
-  // Solo nos importa si entra a /admin
+  console.log("🛣️ Ruta detectada:", pathname);
+
   if (pathname.startsWith('/admin')) {
+    // Si no hay token en las cookies, el middleware te rebota
     if (!token) {
+      console.log("❌ No hay cookie de token. Redirigiendo...");
       return NextResponse.redirect(new URL('/', request.url));
     }
 
     try {
       const payload = await verifyToken(token);
+      
       if (!payload || payload.role !== 'admin') {
+        console.log("🚫 Token inválido o no es admin. Redirigiendo...");
         return NextResponse.redirect(new URL('/', request.url));
       }
+
+      console.log("✅ Acceso concedido a admin");
       return NextResponse.next();
     } catch (error) {
+      console.log("⚠️ Error verificando token:", error);
       const res = NextResponse.redirect(new URL('/', request.url));
       res.cookies.delete('token');
       return res;
@@ -29,5 +37,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'], // Solo protege estas rutas
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
+  ],
 };

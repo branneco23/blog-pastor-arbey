@@ -1,10 +1,14 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Save, Image as ImageIcon, Type, AlignLeft, Clock, Video } from 'lucide-react';
 
 export default function AdminBlogForm() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
+    
+    // Estado inicial para reutilizar en el reset
+    const initialFormState = {
         title: '',
         description: '',
         content: '',
@@ -12,9 +16,11 @@ export default function AdminBlogForm() {
         videoUrl: '',
         category: 'Reflexión',
         readingTime: '5 min'
-    });
+    };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const [formData, setFormData] = useState(initialFormState);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
 
@@ -27,21 +33,17 @@ export default function AdminBlogForm() {
 
             if (res.ok) {
                 alert("¡Gloria a Dios! Blog publicado con éxito.");
-                // Resetear el formulario incluyendo el videoUrl
-                setFormData({ 
-                    title: '', 
-                    description: '', 
-                    content: '', 
-                    image: '', 
-                    videoUrl: '', 
-                    category: 'Reflexión', 
-                    readingTime: '5 min' 
-                });
+                setFormData(initialFormState); // Reset completo
+                
+                // Opcional: Redirigir al inicio para ver el nuevo blog
+                router.push('/');
+                router.refresh(); 
             } else {
                 const errorData = await res.json();
                 alert(`Error: ${errorData.error || 'No se pudo publicar'}`);
             }
         } catch (error) {
+            console.error("Error al publicar:", error);
             alert("Error de conexión al publicar");
         } finally {
             setLoading(false);
@@ -63,6 +65,7 @@ export default function AdminBlogForm() {
                     <label className="text-xs font-black uppercase text-slate-400 ml-1">Título del Blog</label>
                     <input
                         required
+                        type="text"
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         placeholder="Ej: La Unidad de Dios"
                         value={formData.title}
@@ -78,11 +81,13 @@ export default function AdminBlogForm() {
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     >
-                        <option>Fundamentos de Fe</option>
-                        <option>Salvación</option>
-                        <option>Bautismo</option>
-                        <option>Santidad</option>
-                        <option>Reflexión</option>
+                        <option value="Fundamentos de Fe">Fundamentos de Fe</option>
+                        <option value="Salvación">Salvación</option>
+                        <option value="Bautismo">Bautismo</option>
+                        <option value="Santidad">Santidad</option>
+                        <option value="Reflexión">Reflexión</option>
+                        <option value="Escatología">Escatología</option>
+                        <option value="Dones Espirituales">Dones Espirituales</option>
                     </select>
                 </div>
             </div>
@@ -108,6 +113,7 @@ export default function AdminBlogForm() {
                     </label>
                     <input
                         required
+                        type="url"
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         placeholder="https://tu-imagen.jpg"
                         value={formData.image}
@@ -120,6 +126,7 @@ export default function AdminBlogForm() {
                     </label>
                     <input
                         required
+                        type="text"
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700"
                         placeholder="Ej: 8 min"
                         value={formData.readingTime}
@@ -134,6 +141,7 @@ export default function AdminBlogForm() {
                     <Video size={12} /> Link de Video (YouTube/Vimeo) - Opcional
                 </label>
                 <input
+                    type="url"
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                     placeholder="https://youtube.com/watch?v=..."
                     value={formData.videoUrl}
