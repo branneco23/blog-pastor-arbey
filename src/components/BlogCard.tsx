@@ -1,52 +1,73 @@
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
+'use client';
 import Link from 'next/link';
 
-interface CardProps {
-  category: string;
-  title: string;
-  description: string;
-  date: string;
-  readTime: string;
-  image: string;
-  slug: string;
+interface BlogCardProps {
+  blog: {
+    _id: string;
+    title: string;
+    description: string;
+    category: string;
+    image: string;
+    readingTime: string;
+    createdAt: string;
+  };
 }
 
-export default function DoctrineCard({ category, title, description, date, readTime, image, slug }: CardProps) {
+// Recibimos "blog" como prop principal
+export default function BlogCard({ blog }: BlogCardProps) {
+  // Desestructuramos del objeto blog para usar las variables fácilmente
+  const { _id, title, description, category, image, readingTime, createdAt } = blog;
+
+  // Función segura para la fecha
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Reciente";
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  };
+
   return (
-    <div className="group bg-white rounded-[32px] border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col h-full">
-      {/* Imagen con Badge */}
-      <div className="relative h-56 w-full overflow-hidden">
-        <img 
-          src={image} 
-          alt={title} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-        />
-        <span className="absolute top-4 left-4 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg">
-          {category}
-        </span>
+    <div className="group bg-white rounded-[40px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
+      {/* Imagen */}
+      <div className="relative h-64 w-full overflow-hidden bg-slate-100">
+        {image ? (
+          <img 
+            src={image} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs uppercase">Sin imagen</div>
+        )}
+        <div className="absolute top-5 left-5">
+          <span className="bg-white/95 backdrop-blur-md text-blue-600 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl shadow-sm">
+            {category || 'General'}
+          </span>
+        </div>
       </div>
 
       {/* Contenido */}
-      <div className="p-7 flex flex-col flex-1">
-        <h3 className="text-xl font-black text-slate-900 leading-tight mb-3 group-hover:text-blue-600 transition-colors">
-          {title}
+      <div className="p-8 flex flex-col flex-grow">
+        <div className="flex items-center gap-3 text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-4">
+          <span>{formatDate(createdAt)}</span>
+          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+          <span>{readingTime || '5 min'}</span>
+        </div>
+
+        <h3 className="text-2xl font-bold text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
+          {title || 'Título no disponible'}
         </h3>
-        <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-2">
-          {description}
+        
+        <p className="text-slate-500 text-sm leading-relaxed line-clamp-3 mb-8">
+          {description || 'Sin descripción disponible para esta enseñanza.'}
         </p>
 
-        {/* Metadatos */}
-        <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between text-slate-400">
-          <div className="flex items-center gap-4 text-[12px] font-medium">
-            <span className="flex items-center gap-1.5">
-              <Calendar size={14} /> {date}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={14} /> {readTime}
-            </span>
-          </div>
-          <Link href={`/doctrinas/${slug}`} className="flex items-center gap-1 text-blue-600 font-bold text-sm hover:gap-2 transition-all">
-            Leer más <ArrowRight size={16} />
+        <div className="mt-auto">
+          <Link 
+            href={`/blog/${_id}`} 
+            className="inline-flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest group/btn"
+          >
+            Leer enseñanza
+            <span className="transition-transform group-hover/btn:translate-x-1">→</span>
           </Link>
         </div>
       </div>

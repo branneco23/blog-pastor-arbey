@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Image as ImageIcon, Type, AlignLeft, Tag } from 'lucide-react';
+import { Clock, PlusCircle, BookOpen, ArrowLeft, Save, Image as ImageIcon, Type, AlignLeft, Tag } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NuevaDoctrina() {

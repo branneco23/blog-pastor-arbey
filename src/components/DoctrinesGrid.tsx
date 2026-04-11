@@ -1,63 +1,57 @@
+'use client';
+import { useState } from 'react'; // Paso 1: Importar useState
 import CategoryFilter from './CategoryFilter';
-import DoctrineCard from './BlogCard';
+import BlogCard from './BlogCard';
 
-const doctrines = [
-  {
-    category: "Fundamentos de Fe",
-    title: "La Unidad de Dios: Monoteísmo Estricto",
-    description: "Exploramos la doctrina fundamental de la unicidad de Dios según las Escrituras y la revelación del nombre de Jesús.",
-    date: "14 mar 2024",
-    readTime: "8 min",
-    image: "/images/doctrine1.jpg", // Asegúrate de tener estas imágenes
-    slug: "unidad-de-dios"
-  },
-  {
-    category: "Fundamentos de Fe",
-    title: "La Unidad de Dios: Monoteísmo Estricto",
-    description: "Exploramos la doctrina fundamental de la unicidad de Dios según las Escrituras y la revelación del nombre de Jesús.",
-    date: "14 mar 2024",
-    readTime: "8 min",
-    image: "/images/doctrine1.jpg", // Asegúrate de tener estas imágenes
-    slug: "unidad-de-dios"
-  },
-  {
-    category: "Fundamentos de Fe",
-    title: "La Unidad de Dios: Monoteísmo Estricto",
-    description: "Exploramos la doctrina fundamental de la unicidad de Dios según las Escrituras y la revelación del nombre de Jesús.",
-    date: "14 mar 2024",
-    readTime: "8 min",
-    image: "/images/doctrine1.jpg", // Asegúrate de tener estas imágenes
-    slug: "unidad-de-dios"
-  },
-  {
-    category: "Fundamentos de Fe",
-    title: "La Unidad de Dios: Monoteísmo Estricto",
-    description: "Exploramos la doctrina fundamental de la unicidad de Dios según las Escrituras y la revelación del nombre de Jesús.",
-    date: "14 mar 2024",
-    readTime: "8 min",
-    image: "/images/doctrine1.jpg", // Asegúrate de tener estas imágenes
-    slug: "unidad-de-dios"
-  },
-  // ... Duplica para los otros 5 elementos de tu Figma
-];
+interface Doctrine {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  image: string;
+  readingTime: string;
+  createdAt: string;
+}
 
-export default function DoctrineGrid() {
+export default function DoctrineGrid({ doctrines = [] }: { doctrines: Doctrine[] }) {
+  // Paso 2: Crear el estado para la categoría seleccionada
+  const [activeCategory, setActiveCategory] = useState('Todas');
+
+  // Paso 3: Filtrar las doctrinas lógicamente
+  const filteredDoctrines = activeCategory === 'Todas'
+    ? doctrines
+    : doctrines.filter(item => item.category === activeCategory);
+
   return (
-    <section className="bg-slate-50/50 py-12">
+    <section className="bg-slate-50/50 py-16">
       <div className="max-w-7xl mx-auto px-6">
-        
-        <CategoryFilter />
 
-        <div className="mt-8 mb-10">
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Todas las Doctrinas</h2>
-          <p className="text-slate-500 font-bold mt-1">{doctrines.length} doctrinas</p>
+        {/* Paso 4: Pasar la categoría activa y la función para cambiarla */}
+        <CategoryFilter 
+          activeCategory={activeCategory} 
+          onCategoryChange={setActiveCategory} 
+        />
+
+        <div className="mt-12 mb-10">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+            {activeCategory === 'Todas' ? 'Todas las Doctrinas' : activeCategory}
+          </h2>
+          <p className="text-slate-500 font-bold mt-2">
+            {filteredDoctrines.length} {filteredDoctrines.length === 1 ? 'doctrina' : 'doctrinas'} encontradas
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {doctrines.map((item, index) => (
-            <DoctrineCard key={index} {...item} />
-          ))}
-        </div>
+        {filteredDoctrines.length === 0 ? (
+          <div className="text-center py-24 bg-white rounded-[48px] border border-dashed border-slate-200">
+            <p className="text-slate-400 font-medium">No hay enseñanzas en esta categoría aún.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {filteredDoctrines.map((item) => (
+              <BlogCard key={item._id} blog={item} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Importamos el router de Next
+import { useRouter } from 'next/navigation';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const router = useRouter(); // Inicializamos el router
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -40,35 +40,33 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
       const data = await response.json();
 
+      // Dentro de handleSubmit en AuthModal.tsx
       if (response.ok) {
-        // 1. Guardar con validación: Aseguramos que el rol exista
+        const userObj = data.user || data;
+
         const userToSave = {
-          name: data.name,
-          role: data.role || 'user' // Si el backend no manda rol, por defecto es user
+          name: userObj.name,
+          role: userObj.role || 'user',
+          email: userObj.email
         };
 
+        // 1. Guardamos los nuevos datos (Limpiando los viejos)
+        localStorage.removeItem('user_data');
         localStorage.setItem('user_data', JSON.stringify(userToSave));
 
-        // 2. Eventos de sincronización
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new Event('user-login')); // Evento personalizado para el Navbar
-        
+        // 2. IMPORTANTE: Gritarle al Navbar que el usuario cambió
+        window.dispatchEvent(new Event('user-login'));
+
         onClose();
 
-        // 3. REDIRECCIÓN MEJORADA
-        // Usamos router.push y refresh para que Next.js actualice los permisos del Middleware
-        if (userToSave.role === 'admin') {
-          router.push('/admin/blogs');
-          setTimeout(() => router.refresh(), 100); 
-        } else {
-          router.push('/');
-        }
-
+        // 3. Redirigir y refrescar para limpiar estados residuales
+        router.push(userToSave.role === 'admin' ? '/admin/crear-blog' : '/');
+        setTimeout(() => router.refresh(), 100);
       } else {
         alert(data.error || "Ocurrió un error");
       }
     } catch (err) {
-      alert("Error de conexión.");
+      alert("Error de conexión con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -81,7 +79,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div 
+      <div
         className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative border border-white/20 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
