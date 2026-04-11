@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer';
 
 export default function Home() {
   const [currentCat, setCurrentCat] = useState("Todas");
-  const [blogs, setBlogs] = useState([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
 
   // 1. Cargar el usuario del localStorage para saber si es Admin
@@ -30,14 +30,13 @@ export default function Home() {
   }, []);
 
   // 3. Filtrar los blogs según la categoría seleccionada
-  const filteredBlogs = blogs.filter((blog: any) => 
-    currentCat === "Todas" ? true : blog.category === currentCat
-  );
+  const filteredBlogs = Array.isArray(blogs)
+    ? blogs.filter((blog: any) => currentCat === "Todas" ? true : blog.category === currentCat)
+    : [];
 
   return (
     <main className="min-h-screen bg-white">
-      <Navbar />
-      <Hero/>
+      <Hero />
       <div className="max-w-7xl mx-auto px-6 py-12">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-black text-slate-900 uppercase">Doctrinas Bíblicas</h1>
@@ -45,10 +44,10 @@ export default function Home() {
         </header>
 
         {/* AQUÍ VA EL COMPONENTE CON SUS PROPS */}
-        <CategoryFilter 
-          activeCategory={currentCat} 
+        <CategoryFilter
+          activeCategory={currentCat}
           onCategoryChange={setCurrentCat}
-          isAdmin={user?.role === 'admin'} 
+          isAdmin={user?.role === 'admin'}
         />
 
         {/* Renderizado de los Blogs filtrados */}
@@ -64,7 +63,7 @@ export default function Home() {
           </p>
         )}
       </div>
-      <Footer/>
+      <Footer />
     </main>
   );
 }

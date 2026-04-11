@@ -6,7 +6,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Calendar, Clock, User as UserIcon, ChevronLeft } from 'lucide-react';
-// Importa tus componentes de cliente
 import CommentSection from '@/components/CommentSection';
 
 interface Props {
@@ -16,25 +15,27 @@ interface Props {
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  // 1. Conexión y obtención de datos
   await connectDB();
   const blog = await Blog.findOne({ slug }).lean();
 
   if (!blog) {
-    notFound(); // Redirige a 404 si el slug no existe
+    notFound();
   }
 
-  // 2. Verificar usuario desde la cookie de sesión
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   const user = token ? await verifyToken(token) : null;
 
   return (
     <article className="min-h-screen bg-white">
-      {/* Botón Volver */}
-      <div className="max-w-4xl mx-auto px-6 pt-8">
-        <Link href="/doctrinas" className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-bold text-sm">
-          <ChevronLeft size={18} /> Volver a Doctrinas
+      {/* CORRECCIÓN: Botón Volver usando Link en lugar de router.back() */}
+      <div className="max-w-4xl mx-auto px-6 pt-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 font-black text-xs uppercase tracking-[0.2em] transition-colors group"
+        >
+          <span className="text-lg transition-transform group-hover:-translate-x-1">←</span>
+          Volver atrás
         </Link>
       </div>
 
@@ -78,7 +79,7 @@ export default async function BlogDetailPage({ params }: Props) {
           prose-headings:font-black prose-headings:text-slate-900
           prose-p:text-slate-600 prose-p:leading-relaxed
           prose-strong:text-slate-900">
-          {/* Aquí renderizamos el contenido. Si usas Markdown o HTML, ajusta esto */}
+          
           <p className="text-xl text-slate-500 font-medium italic mb-8">
             {blog.description}
           </p>
@@ -90,7 +91,6 @@ export default async function BlogDetailPage({ params }: Props) {
           <h2 className="text-2xl font-black text-slate-900 mb-8">Conversación</h2>
 
           {user ? (
-            // Componente de Cliente para manejar el formulario de comentarios
             <CommentSection
               blogId={blog._id.toString()}
               user={user as any}

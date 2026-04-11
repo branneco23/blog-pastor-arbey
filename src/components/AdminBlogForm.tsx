@@ -5,14 +5,14 @@ import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
 // Importación dinámica para el editor
-const ReactQuill = dynamic(() => import('react-quill-new'), { 
+const ReactQuill = dynamic(() => import('react-quill-new'), {
   ssr: false,
-  loading: () => <div className="h-64 bg-slate-50 animate-pulse rounded-2xl border border-slate-200" /> 
+  loading: () => <div className="h-64 bg-slate-50 animate-pulse rounded-2xl border border-slate-200" />
 });
 
 export default function AdminBlogForm() {
   const router = useRouter();
-  
+
   // 1. Estados para los datos y categorías de la BD
   const [dbCategories, setDbCategories] = useState([]);
   const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ export default function AdminBlogForm() {
     readingTime: '',
     videoUrl: ''
   });
-  const [content, setContent] = useState(''); 
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
   // 2. Cargar categorías de la base de datos al montar el componente
@@ -33,7 +33,7 @@ export default function AdminBlogForm() {
         const res = await fetch('/api/categories');
         const data = await res.json();
         setDbCategories(data);
-        
+
         // Si hay categorías, ponemos la primera por defecto en el formData
         if (data.length > 0) {
           setFormData(prev => ({ ...prev, category: data[0].name }));
@@ -51,8 +51,8 @@ export default function AdminBlogForm() {
       [{ 'size': ['small', false, 'large', 'huge'] }],
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'indent': '-1' }, { 'indent': '+1' }],
       [{ 'align': [] }],
       ['link', 'image', 'video'],
       ['clean']
@@ -68,10 +68,13 @@ export default function AdminBlogForm() {
     setLoading(true);
 
     try {
+      // En AdminBlogForm.tsx línea 71
       const res = await fetch('/api/blogs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, content }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
       if (res.ok) {
@@ -90,7 +93,7 @@ export default function AdminBlogForm() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
-      <button 
+      <button
         onClick={() => router.back()}
         className="mb-8 flex items-center gap-2 text-slate-400 hover:text-blue-600 font-black text-xs uppercase tracking-[0.2em] transition-colors group"
       >
@@ -99,7 +102,7 @@ export default function AdminBlogForm() {
       </button>
 
       <form onSubmit={handleSubmit} className="p-8 space-y-8 bg-white rounded-[40px] shadow-sm border border-slate-100">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Título del Blog</label>
@@ -108,10 +111,10 @@ export default function AdminBlogForm() {
 
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Categoría</label>
-            <select 
-              name="category" 
-              value={formData.category} 
-              onChange={handleChange} 
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
               className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
             >
               {dbCategories.length > 0 ? (
@@ -151,7 +154,7 @@ export default function AdminBlogForm() {
         <div className="space-y-2">
           <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cuerpo del Blog</label>
           <div className="bg-white rounded-[24px] overflow-hidden border border-slate-200">
-            <ReactQuill 
+            <ReactQuill
               theme="snow"
               value={content}
               onChange={setContent}
@@ -161,12 +164,11 @@ export default function AdminBlogForm() {
           </div>
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading || dbCategories.length === 0}
-          className={`w-full py-5 rounded-[24px] font-black text-sm uppercase tracking-[0.2em] transition-all ${
-            loading ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200'
-          }`}
+          className={`w-full py-5 rounded-[24px] font-black text-sm uppercase tracking-[0.2em] transition-all ${loading ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200'
+            }`}
         >
           {loading ? 'Publicando...' : 'Publicar Enseñanza'}
         </button>

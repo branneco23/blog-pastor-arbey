@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
-
-export const metadata: Metadata = {
-  title: "Blog Pastor Arbey",
-  description: "Mensajes de fe y esperanza",
-};
+// src/app/layout.tsx
+import Navbar from '@/components/Navbar';
+import RadioFloating from '@/components/RadioFloating'; // Importa el nuevo componente
+import './globals.css';
 
 export default function RootLayout({
   children,
@@ -12,9 +9,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className="antialiased bg-slate-50 text-slate-900">
+    <html lang="es">
+      <body className="antialiased font-sans">
+        <Navbar />
         {children}
+        <RadioFloating /> {/* Esto lo pone por encima de todo */}
       </body>
     </html>
   );

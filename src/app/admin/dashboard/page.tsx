@@ -9,11 +9,11 @@ import {
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
-  const [blogs, setBlogs] = useState([]);
-  const [categories, setCategories] = useState([]);
+  // ✅ Inicializamos siempre como array vacío para evitar errores de .map
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados para el Pop-up de Categorías
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,19 +29,25 @@ export default function SuperAdminDashboard() {
         fetch('/api/blogs'),
         fetch('/api/categories')
       ]);
+      
       const blogsData = await blogsRes.json();
       const catsData = await catsRes.json();
       
-      setBlogs(blogsData);
-      setCategories(catsData);
+      // ✅ Validamos que la data sea un array antes de guardar
+      setBlogs(Array.isArray(blogsData) ? blogsData : []);
+      setCategories(Array.isArray(catsData) ? catsData : []);
+      
+      if (!Array.isArray(blogsData)) {
+        console.error("La API no devolvió una lista de blogs:", blogsData);
+      }
     } catch (error) {
       console.error("Error cargando datos:", error);
+      setBlogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para agregar categoría a la BD
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
@@ -50,17 +56,14 @@ export default function SuperAdminDashboard() {
     try {
       const res = await fetch('/api/categories', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-role': 'admin' 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCatName.trim() }),
       });
 
       if (res.ok) {
         setNewCatName("");
         setIsModalOpen(false);
-        fetchData(); // Recargar lista
+        fetchData();
       } else {
         const error = await res.json();
         alert(error.error || "Error al guardar");
@@ -76,7 +79,10 @@ export default function SuperAdminDashboard() {
     if (!confirm('¿Estás seguro de eliminar esta doctrina?')) return;
     try {
       const res = await fetch(`/api/admin/blogs/${id}`, { method: 'DELETE' });
-      if (res.ok) setBlogs(blogs.filter((b: any) => b._id !== id));
+      if (res.ok) {
+        // ✅ Ajustado para usar .id (Prisma)
+        setBlogs(blogs.filter((b: any) => (b.id || b._id) !== id));
+      }
     } catch (error) {
       alert("Error al eliminar");
     }
@@ -86,7 +92,6 @@ export default function SuperAdminDashboard() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* Navegación Superior */}
         <div className="flex justify-between items-center mb-8">
           <button 
             onClick={() => router.push('/')}
@@ -118,43 +123,57 @@ export default function SuperAdminDashboard() {
           </Link>
         </header>
 
-        {/* Grid de Blogs */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
             {[1, 2, 3].map(i => <div key={i} className="h-72 bg-white rounded-[32px]" />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogs.map((blog: any) => (
-              <div key={blog._id} className="bg-white rounded-[32px] p-5 shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
-                <div className="relative h-44 rounded-2xl overflow-hidden mb-4">
-                  <img src={blog.image} className="w-full h-full object-cover" alt={blog.title} />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black uppercase text-slate-800 border border-white">
-                    {blog.category}
-                  </div>
-                </div>
+            {/* ✅ Agregamos validación Array.isArray y usamos blog.id o blog._id */}
+            {Array.isArray(blogs) && blogs.length > 0 ? (
+              blogs.map((blog: any) => {
+                const blogId = blog.id || blog._id;
+                return (
+                  <div key={blogId} className="bg-white rounded-[32px] p-5 shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
+                    <div className="relative h-44 rounded-2xl overflow-hidden mb-4">
+                      {/* ✅ Ajustado a blog.imageUrl (Prisma) */}
+                      <img 
+                        src={blog.imageUrl || blog.image || '/placeholder-image.jpg'} 
+                        className="w-full h-full object-cover" 
+                        alt={blog.title} 
+                      />
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black uppercase text-slate-800 border border-white">
+                        {blog.category?.name || blog.category || 'Sin categoría'}
+                      </div>
+                    </div>
 
-                <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{blog.title}</h3>
-                <p className="text-slate-500 text-xs mb-6 line-clamp-2 leading-relaxed">{blog.description}</p>
+                    <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{blog.title}</h3>
+                    <p className="text-slate-500 text-xs mb-6 line-clamp-2 leading-relaxed">{blog.description}</p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                  <div className="flex gap-2">
-                    <Link href={`/blog/${blog._id}`} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                      <Eye size={18} />
-                    </Link>
-                    <Link href={`/admin/editar-blog/${blog._id}`} className="p-2.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all">
-                      <Edit size={18} />
-                    </Link>
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                      <div className="flex gap-2">
+                        <Link href={`/blog/${blogId}`} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Eye size={18} />
+                        </Link>
+                        <Link href={`/admin/editar-blog/${blogId}`} className="p-2.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all">
+                          <Edit size={18} />
+                        </Link>
+                      </div>
+                      <button 
+                        onClick={() => deleteBlog(blogId)}
+                        className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <button 
-                    onClick={() => deleteBlog(blog._id)}
-                    className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-20 text-center bg-white rounded-[32px] border-2 border-dashed border-slate-200">
+                <p className="text-slate-400 font-medium">No se encontraron doctrinas publicadas.</p>
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -174,7 +193,6 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
 
-              {/* Formulario de agregar */}
               <form onSubmit={handleAddCategory} className="mb-8">
                 <div className="flex gap-2">
                   <input 
@@ -195,12 +213,11 @@ export default function SuperAdminDashboard() {
                 </div>
               </form>
 
-              {/* Lista de ocupadas */}
               <div>
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">Actualmente ocupadas:</span>
                 <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {categories.map((cat: any) => (
-                    <div key={cat._id} className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                  {Array.isArray(categories) && categories.map((cat: any) => (
+                    <div key={cat.id || cat._id} className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-700">{cat.name}</span>
                     </div>
                   ))}

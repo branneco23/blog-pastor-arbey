@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Radio, LogIn, LogOut, PlusCircle, BookOpen, LayoutDashboard } from 'lucide-react';
+import {
+  Radio,
+  LogIn,
+  LogOut,
+  PlusCircle,
+  LayoutDashboard,
+  Tags
+} from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from './AuthModal';
 
@@ -15,7 +22,6 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-
     const checkUser = () => {
       const saved = localStorage.getItem('user_data');
       if (saved) {
@@ -31,7 +37,6 @@ export default function Navbar() {
     };
 
     checkUser();
-
     window.addEventListener('user-login', checkUser);
     window.addEventListener('storage', checkUser);
 
@@ -73,7 +78,6 @@ export default function Navbar() {
           </Link>
 
           {/* MENÚ DERECHO */}
-          {/* MENÚ DERECHO */}
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-2 mr-2">
               <Link
@@ -83,10 +87,10 @@ export default function Navbar() {
                 Inicio
               </Link>
 
-              {/* Ajustado para coincidir con tu carpeta actual */}
+              {/* CORREGIDO: /about en minúsculas */}
               <Link
-                href="/AboutMe"
-                className={`px-4 py-2 text-sm font-bold transition ${pathname === '/AboutMe' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}
+                href="/about"
+                className={`px-4 py-2 text-sm font-bold transition ${pathname === '/about' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}
               >
                 Acerca
               </Link>
@@ -99,38 +103,44 @@ export default function Navbar() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
               </span>
               <Radio size={16} strokeWidth={3} />
-              <span className="hidden sm:inline uppercase tracking-widest">En Vivo</span>
+              <span className="hidden sm:inline uppercase tracking-widest text-[11px]">En Vivo</span>
             </Link>
 
             {/* SECCIÓN DINÁMICA */}
             {user ? (
               <div className="flex items-center gap-4 ml-2">
-                <div className="hidden md:flex items-center gap-3 border-l border-slate-200 pl-4 mr-2">
+                <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-4 mr-2">
 
-                  {/* BOTÓN DASHBOARD (Mis Doctrinas) - CORREGIDO */}
                   <Link
                     href="/admin/dashboard"
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
                   >
-                    <LayoutDashboard size={16} /> Mis Doctrinas
+                    <LayoutDashboard size={16} /> <span className="hidden lg:inline">Mis Doctrinas</span>
                   </Link>
 
-                  {/* BOTÓN CREAR DOCTRINA */}
+                  {user?.role === 'admin' && (
+                    <Link
+                      href="/admin/categorias"
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      <Tags size={16} /> <span className="hidden lg:inline">Categorías</span>
+                    </Link>
+                  )}
+
                   {user?.role === 'admin' && (
                     <Link
                       href="/admin/crear-blog"
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-black shadow-lg active:scale-95 ${pathname === '/admin/crear-blog'
-                          ? 'bg-slate-900 text-white shadow-slate-200'
-                          : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-200 hover:from-blue-700 hover:to-indigo-700'
+                        ? 'bg-slate-900 text-white shadow-slate-200'
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-200 hover:from-blue-700 hover:to-indigo-700'
                         }`}
                     >
                       <PlusCircle size={18} />
-                      <span className="hidden lg:inline uppercase tracking-tight">Crear Doctrina</span>
+                      <span className="hidden lg:inline uppercase tracking-tight">Crear Blog</span>
                     </Link>
                   )}
                 </div>
 
-                {/* PERFIL Y LOGOUT */}
                 <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-full pr-4 border border-slate-200 shadow-sm">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold uppercase text-xs">
                     {user?.name ? user.name.charAt(0) : 'A'}
