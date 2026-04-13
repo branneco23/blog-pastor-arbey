@@ -8,7 +8,8 @@ import {
   LogOut,
   PlusCircle,
   LayoutDashboard,
-  Tags
+  Tags,
+  MessageSquare 
 } from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from './AuthModal';
@@ -46,7 +47,8 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     localStorage.removeItem('user_data');
     setUser(null);
     router.push('/');
@@ -57,120 +59,120 @@ export default function Navbar() {
     return <nav className="sticky top-0 z-50 bg-white border-b h-20" />;
   }
 
+  // Determinamos si debe expandirse
+  const isAdmin = user?.role === 'admin';
+
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm transition-all duration-700">
+        <div 
+          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${
+            isAdmin 
+              ? 'max-w-[98%] 2xl:max-w-[1600px]' 
+              : 'max-w-7xl'
+          }`}
+        >
 
-          {/* LOGO */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden shrink-0">
+          {/* LOGO - shrink-0 para que no se aplaste */}
+          <Link href="/" className="flex items-center gap-3 group shrink-0">
+            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden">
               <img src="/logo-ipuc.webp" alt="IPUC" className="w-10 h-10 object-contain" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-lg md:text-xl text-slate-900 leading-none tracking-tight">
+            <div className="flex flex-col hidden sm:flex">
+              <span className="font-black text-lg text-slate-900 leading-none tracking-tighter">
                 Pastor Arbey Bustamante
               </span>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
-                Iglesia Pentecostal Unida de Colombia
+              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                IPUC Neiva
               </span>
             </div>
           </Link>
 
-          {/* MENÚ DERECHO */}
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-2 mr-2">
-              <Link
-                href="/"
-                className={`px-4 py-2 text-sm font-bold transition ${pathname === '/' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}
-              >
-                Inicio
-              </Link>
-
-              {/* CORREGIDO: /about en minúsculas */}
-              <Link
-                href="/about"
-                className={`px-4 py-2 text-sm font-bold transition ${pathname === '/about' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}
-              >
-                Acerca
-              </Link>
+          {/* CONTENEDOR DERECHO - flex-1 para empujar el contenido */}
+          <div className="flex items-center justify-end gap-3 flex-1 ml-4">
+            
+            {/* Menú Público */}
+            <div className="hidden lg:flex items-center gap-1">
+              {['/', '/about', '/testimonios'].map((path) => (
+                <Link
+                  key={path}
+                  href={path}
+                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
+                    pathname === path ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {path === '/' ? 'Inicio' : path.substring(1).charAt(0).toUpperCase() + path.slice(2)}
+                </Link>
+              ))}
             </div>
 
             {/* BOTÓN EN VIVO */}
-            <Link href="/en-vivo" className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-full text-sm font-black shadow-lg shadow-red-100 hover:bg-red-700 transition active:scale-95">
+            <Link href="/en-vivo" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-100 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                <span className="animate-ping absolute h-full w-full rounded-full bg-red-100 opacity-75"></span>
+                <span className="relative rounded-full h-2 w-2 bg-white"></span>
               </span>
-              <Radio size={16} strokeWidth={3} />
-              <span className="hidden sm:inline uppercase tracking-widest text-[11px]">En Vivo</span>
+              <span className="uppercase tracking-tighter">En Vivo</span>
             </Link>
 
-            {/* SECCIÓN DINÁMICA */}
+            {/* SECCIÓN DINÁMICA DE ADMIN */}
             {user ? (
-              <div className="flex items-center gap-4 ml-2">
-                <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-4 mr-2">
-
+              <div className="flex items-center gap-2 pl-4 border-l border-slate-100 animate-in fade-in slide-in-from-right-2">
+                <div className="hidden md:flex items-center gap-1">
+                  
                   <Link
                     href="/admin/dashboard"
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                      pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
+                    }`}
                   >
-                    <LayoutDashboard size={16} /> <span className="hidden lg:inline">Mis Doctrinas</span>
+                    <LayoutDashboard size={16} /> <span className="hidden xl:inline">Doctrinas</span>
                   </Link>
 
-                  {user?.role === 'admin' && (
-                    <Link
-                      href="/admin/categorias"
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition ${pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
-                    >
-                      <Tags size={16} /> <span className="hidden lg:inline">Categorías</span>
-                    </Link>
-                  )}
-
-                  {user?.role === 'admin' && (
-                    <Link
-                      href="/admin/crear-blog"
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-black shadow-lg active:scale-95 ${pathname === '/admin/crear-blog'
-                        ? 'bg-slate-900 text-white shadow-slate-200'
-                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-200 hover:from-blue-700 hover:to-indigo-700'
+                  {isAdmin && (
+                    <>
+                      <Link
+                        href="/admin/testimonios"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          pathname === '/admin/testimonios' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
                         }`}
-                    >
-                      <PlusCircle size={18} />
-                      <span className="hidden lg:inline uppercase tracking-tight">Crear Blog</span>
-                    </Link>
+                      >
+                        <MessageSquare size={16} /> <span className="hidden xl:inline">Testimonios</span>
+                      </Link>
+
+                      <Link
+                        href="/admin/categorias"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Tags size={16} /> <span className="hidden xl:inline">Categorías</span>
+                      </Link>
+
+                      <Link
+                        href="/admin/crear-blog"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-black shadow-md hover:bg-blue-700 transition-all shrink-0 ml-1"
+                      >
+                        <PlusCircle size={16} />
+                        <span className="hidden xl:inline uppercase">Nuevo</span>
+                      </Link>
+                    </>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-full pr-4 border border-slate-200 shadow-sm">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold uppercase text-xs">
-                    {user?.name ? user.name.charAt(0) : 'A'}
+                {/* Perfil Mini */}
+                <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-full pr-3 border border-slate-100 shrink-0">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                    {user.name.charAt(0)}
                   </div>
-
-                  <div className="hidden sm:flex flex-col">
-                    <span className="text-[11px] font-bold text-slate-900 leading-none">
-                      {user?.name || 'Usuario'}
-                    </span>
-                    <span className="text-[9px] text-blue-600 font-black uppercase tracking-tighter mt-0.5">
-                      {user?.role || 'Invitado'}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={handleLogout}
-                    className="ml-1 p-1.5 text-slate-400 hover:text-red-500 transition-colors"
-                    title="Cerrar Sesión"
-                  >
+                  <button onClick={handleLogout} className="p-1 text-slate-400 hover:text-red-500 transition-colors">
                     <LogOut size={16} />
                   </button>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-md shadow-blue-100 hover:bg-blue-700 transition active:scale-95 flex items-center gap-2"
-              >
-                <LogIn size={18} />
-                <span className="hidden sm:inline">Ingresar</span>
+              <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-800 transition shrink-0 flex items-center gap-2">
+                <LogIn size={16} /> Ingresar
               </button>
             )}
           </div>

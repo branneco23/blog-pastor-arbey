@@ -7,7 +7,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // ESTADO PARA EL USUARIO
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -45,9 +45,9 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
     try {
       const res = await fetch('/api/categories', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-user-role': 'admin' 
+          'x-user-role': 'admin'
         },
         body: JSON.stringify({ name: newCategory.trim() }),
       });
@@ -71,12 +71,14 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
           key={cat}
           onClick={() => onCategoryChange(cat)}
           className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 border ${
-            activeCategory === cat 
-              ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105" 
+            // CORRECCIÓN: Compara convirtiendo ambos a minúsculas para evitar errores de digitación
+            activeCategory?.toLowerCase() === cat.toLowerCase()
+              ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
               : "bg-slate-50 text-slate-500 border-slate-100 hover:border-blue-200 hover:bg-white"
-          }`}
+            }`}
         >
-          {cat}
+          {/* Capitaliza el texto para que se vea bien aunque en la BD esté en minúsculas */}
+          {cat.charAt(0).toUpperCase() + cat.slice(1)}
         </button>
       ))}
 
@@ -100,7 +102,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
             </button>
             <h3 className="text-xl font-black text-slate-900 uppercase mb-4">Nueva Doctrina</h3>
             <form onSubmit={handleAddCategory} className="space-y-4">
-              <input 
+              <input
                 autoFocus
                 type="text"
                 value={newCategory}
@@ -108,7 +110,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
                 placeholder="Ej: Escatología..."
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold text-xs uppercase hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"

@@ -1,7 +1,5 @@
-// src/app/layout.tsx
-import Navbar from '@/components/Navbar';
-import RadioFloating from '@/components/RadioFloating'; // Importa el nuevo componente
 import './globals.css';
+import Navbar from '@/components/Navbar'; // Verifica que la ruta sea correcta
 
 export default function RootLayout({
   children,
@@ -9,11 +7,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className="antialiased font-sans">
+    <html lang="es" className="overflow-x-hidden">
+      <body className="antialiased bg-slate-50 text-slate-900 overflow-x-hidden relative">
+        {/* El Navbar solo se declara una vez aquí */}
         <Navbar />
-        {children}
-        <RadioFloating /> {/* Esto lo pone por encima de todo */}
+        
+        {/* w-full y overflow-hidden aseguran que el contenido no empuje hacia los lados */}
+        <main className="min-h-screen w-full overflow-x-hidden">
+          {children}
+        </main>
       </body>
     </html>
   );

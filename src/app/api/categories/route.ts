@@ -1,22 +1,30 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Category from '@/models/Category';
-
-export async function POST(req: Request) {
-  try {
-    await connectDB();
-    const { name } = await req.json();
-    
-    // Crear en la BD
-    const doc = await Category.create({ name });
-    return NextResponse.json(doc, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Error al crear" }, { status: 500 });
-  }
-}
+import Blog from '@/models/Blog';
 
 export async function GET() {
-  await connectDB();
-  const cats = await Category.find({});
-  return NextResponse.json(cats);
+  try {
+    await connectDB();
+    
+    const categories = await Category.find({}).lean();
+
+    // Mapeamos las categorías para incluir el conteo de blogs y normalizar el ID
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (cat: any) => {
+        const count = await Blog.countDocuments({ categoryId: cat._id });
+        return {
+          _id: cat._id.toString(),
+          id: cat._id.toString(), // Doble compatibilidad
+          name: cat.name,
+          count: count
+        };
+      })
+    );
+
+    return NextResponse.json(categoriesWithCount);
+  } catch (error: any) {
+    console.error("Error en GET /api/categories:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

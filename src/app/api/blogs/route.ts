@@ -1,67 +1,35 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // Usamos el cliente de Prisma configurado
-import { cookies } from 'next/headers';
+import { connectDB } from '@/lib/mongodb';
+import Blog from '@/models/Blog';
 
-// Manejador para crear blogs (POST)
 export async function POST(req: Request) {
   try {
-    // 1. Verificación de Autenticación
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    // 2. Obtener datos del cuerpo de la petición
+    await connectDB();
     const body = await req.json();
-    const { title, content, description, readingTime, imageUrl, categoryId } = body;
 
-    // 3. Creación en MongoDB usando Prisma
-    const newBlog = await prisma.blog.create({
-      data: {
-        title,
-        content,
-        description: description || "",
-        readingTime: readingTime || "5 min",
-        imageUrl: imageUrl || "",
-        // Conexión con la categoría (asegúrate de que el ID sea válido)
-        category: {
-          connect: { id: categoryId }
-        }
-      },
+    const nuevoBlog = await Blog.create({
+      title: body.title,
+      categoryId: body.categoryId,
+      description: body.description,
+      imageUrl: body.imageUrl, // Aquí se guarda el Base64 (texto de la imagen)
+      readingTime: body.readingTime || '5 min',
+      videoUrl: body.videoUrl,
+      content: body.content,
     });
 
-    return NextResponse.json(newBlog, { status: 201 });
-
+    return NextResponse.json(nuevoBlog, { status: 201 });
   } catch (error: any) {
-    console.error("❌ ERROR POST BLOG:", error);
-    return NextResponse.json(
-      { error: "Error al crear el blog: " + error.message }, 
-      { status: 500 }
-    );
+    console.error("Error API:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// Manejador para listar blogs (GET)
 export async function GET() {
   try {
-    // Obtenemos los blogs incluyendo la información de su categoría
-    const blogs = await prisma.blog.findMany({
-      include: {
-        category: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
+    await connectDB();
+    const blogs = await Blog.find().populate('categoryId').sort({ createdAt: -1 });
     return NextResponse.json(blogs);
-  } catch (error: any) {
-    console.error("❌ ERROR GET BLOGS:", error);
-    return NextResponse.json(
-      { error: "Error al obtener datos" }, 
-      { status: 500 }
-    );
+  } catch (error) {
+    return NextResponse.json([], { status: 500 });
   }
 }

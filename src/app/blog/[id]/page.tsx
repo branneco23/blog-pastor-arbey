@@ -1,130 +1,180 @@
-import Navbar from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+'use client';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Clock, Calendar, PlayCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// 1. Función para obtener los datos desde la API
-async function getBlog(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/blogs/${id}`, { cache: 'no-store' });
-  if (!res.ok) return null;
-  return res.json();
+interface Blog {
+  _id: string;
+  title: string;
+  description: string;
+  content: string;
+  imageUrl: string | string[];
+  videoUrl?: string;
+  createdAt: string;
+  readingTime: string;
+  categoryId?: { name: string };
 }
 
-// 2. Lógica para renderizar texto, imágenes y videos intercalados
-const renderContent = (text: string) => {
-  // Expresión regular para detectar [img:...] o [vid:...]
-  const parts = text.split(/(\[img:.*?\]|\[vid:.*?\])/g);
+export default function BlogDetailPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const [blog, setBlog] = useState<Blog | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Estados para el Pop-up
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  return parts.map((part, index) => {
-    // Renderizar IMAGEN si detecta el shortcode
-    if (part.startsWith('[img:')) {
-      const url = part.replace('[img:', '').replace(']', '').trim();
-      return (
-        <div key={index} className="my-12 group">
-          <div className="rounded-[40px] overflow-hidden shadow-2xl border-8 border-slate-50 transition-transform duration-500 hover:scale-[1.02]">
-            <img src={url} alt="Imagen de apoyo" className="w-full h-auto object-cover" />
-          </div>
-        </div>
-      );
-    }
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const res = await fetch(`/api/blogs/${id}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setBlog(data);
+      } catch (error) {
+        console.error("Error al cargar la enseñanza:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchBlog();
+  }, [id]);
 
-    // Renderizar VIDEO si detecta el shortcode
-    if (part.startsWith('[vid:')) {
-      const rawUrl = part.replace('[vid:', '').replace(']', '').trim();
-      const embedUrl = rawUrl.replace("watch?v=", "embed/").split("&")[0];
-      return (
-        <div key={index} className="my-12">
-          <div className="aspect-video rounded-[40px] overflow-hidden shadow-2xl border-4 border-white ring-1 ring-slate-100">
-            <iframe
-              className="w-full h-full"
-              src={embedUrl}
-              title="YouTube video player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          </div>
-        </div>
-      );
-    }
+  // Consolidar Media: Video primero (como evento principal) + Imágenes
+  const mediaItems = blog ? [
+    ...(blog.videoUrl ? [{ type: 'video', url: blog.videoUrl }] : []),
+    ...(Array.isArray(blog.imageUrl) ? blog.imageUrl : [blog.imageUrl])
+  ] : [];
 
-    // Renderizar TEXTO normal (si no es un código)
-    return (
-      <p key={index} className="text-slate-700 leading-relaxed whitespace-pre-wrap text-lg md:text-xl font-medium mb-8">
-        {part}
-      </p>
-    );
-  });
-};
+  const openLightbox = (index: number) => {
+    setCurrentIndex(index);
+    setIsOpen(true);
+  };
 
-export default async function BlogPage({ params }: { params: Promise<{ id: string }> }) {
-  // Desvolvemos los params según el estándar actual de Next.js
-  const { id } = await params;
-  const blog = await getBlog(id);
+  const getEmbedUrl = (url: string) => {
+    if (!url) return "";
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : "";
+  };
 
-  if (!blog) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-black text-slate-900 mb-4">404</h1>
-          <p className="text-slate-500 font-bold">La enseñanza no pudo ser encontrada.</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white animate-pulse text-slate-400 font-black uppercase text-xs">Cargando...</div>;
+  if (!blog) return <div className="min-h-screen flex items-center justify-center">No encontrado</div>;
 
   return (
-    <main className="bg-white min-h-screen">
-      <Navbar />
+    <div className="w-full bg-white relative">
+      <article className="max-w-4xl mx-auto py-10 md:py-16 px-4">
+        
+        <button onClick={() => router.back()} className="mb-10 flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] group transition-all hover:text-blue-600">
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Regresar
+        </button>
 
-      <article className="max-w-4xl mx-auto px-6 py-24">
-        {/* Cabecera de la enseñanza */}
-        <header className="text-center mb-16">
-          <span className="bg-blue-50 text-blue-600 text-xs font-black uppercase tracking-[0.2em] px-6 py-2.5 rounded-full mb-8 inline-block shadow-sm shadow-blue-100">
-            {blog.category}
+        <header className="mb-12">
+          <span className="inline-block bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest border border-blue-100 mb-6">
+            {blog.categoryId?.name || 'General'}
           </span>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] mb-8 tracking-tight">
-            {blog.title}
-          </h1>
-          <div className="flex items-center justify-center gap-4 text-slate-400 font-bold text-sm uppercase tracking-widest">
-            <span>{new Date(blog.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-            <span>{blog.readingTime}</span>
+          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight mb-8">{blog.title}</h1>
+          <div className="flex gap-5 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+             <span className="flex items-center gap-2"><Calendar size={14}/> {new Date(blog.createdAt).toLocaleDateString()}</span>
+             <span className="flex items-center gap-2"><Clock size={14}/> {blog.readingTime}</span>
           </div>
         </header>
 
-        {/* Portada Principal */}
-        <div className="rounded-[56px] overflow-hidden shadow-2xl mb-20 aspect-[16/9] ring-1 ring-slate-100">
-          <img
-            src={blog.image}
-            alt={blog.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Cuerpo del Blog Procesado */}
-        <div className="max-w-3xl mx-auto">
-          {/*Busca el lugar donde renderizas el contenido del blog*/}
-          <div
-            className="prose prose-slate max-w-none text-slate-700 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: blog.content }}
-          />
-
-          {/* Si el Pastor usó el campo de video original del formulario, también lo mostramos al final */}
-          {blog.videoUrl && !blog.content.includes(blog.videoUrl) && (
-            <div className="mt-20 pt-16 border-t border-slate-100">
-              <h3 className="text-2xl font-black text-slate-900 mb-10">Video de Referencia</h3>
-              <div className="aspect-video rounded-[40px] overflow-hidden shadow-2xl ring-1 ring-slate-100">
-                <iframe
-                  className="w-full h-full"
-                  src={blog.videoUrl.replace("watch?v=", "embed/").split("&")[0]}
-                  allowFullScreen
-                ></iframe>
+        {/* --- EVENTO PRINCIPAL: VIDEO (Ocupa todo el ancho) --- */}
+        {blog.videoUrl && (
+          <div className="mb-10 group relative cursor-pointer" onClick={() => openLightbox(0)}>
+            <div className="flex items-center gap-3 text-slate-900 font-black text-xs uppercase tracking-[0.2em] mb-6">
+              <PlayCircle className="text-red-600" size={20} /> Enseñanza en Video
+            </div>
+            <div className="relative w-full aspect-video rounded-[40px] overflow-hidden shadow-2xl border border-slate-100 bg-slate-900">
+              <img 
+                src={`https://img.youtube.com/vi/${blog.videoUrl.split('v=')[1]?.split('&')[0]}/maxresdefault.jpg`} 
+                className="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+                alt="Miniatura Video"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+                  <PlayCircle className="text-white" size={40} />
+                </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* --- GALERÍA DE IMÁGENES (Grid debajo) --- */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-16">
+          {(Array.isArray(blog.imageUrl) ? blog.imageUrl : [blog.imageUrl]).map((img, idx) => {
+            const mediaIdx = blog.videoUrl ? idx + 1 : idx;
+            return (
+              <div 
+                key={idx}
+                onClick={() => openLightbox(mediaIdx)}
+                className="relative aspect-square rounded-[24px] overflow-hidden cursor-pointer group border border-slate-100 shadow-md shadow-slate-200/50"
+              >
+                <img src={img} className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:rotate-2" alt="Galería" />
+                <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors" />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CONTENIDO TEXTUAL */}
+        <div className="prose prose-slate prose-lg max-w-none">
+          <div className="text-[10px] font-black text-blue-600/40 uppercase tracking-[0.4em] mb-10 flex items-center gap-4">
+            <span className="h-[1px] flex-1 bg-slate-100"></span> Estudio Bíblico <span className="h-[1px] flex-1 bg-slate-100"></span>
+          </div>
+          <div dangerouslySetInnerHTML={{ __html: blog.content }} className="ql-editor !p-0 text-slate-700 text-lg leading-relaxed" />
         </div>
       </article>
 
-      <Footer />
-    </main>
+      {/* --- POP-UP (LIGHTBOX) --- */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+          
+          <div className="relative w-full max-w-5xl h-fit">
+            <button onClick={() => setIsOpen(false)} className="absolute -top-14 right-0 text-white hover:text-blue-400 transition-all p-2 bg-white/10 rounded-full">
+              <X size={24} />
+            </button>
+
+            {/* Navegación */}
+            {mediaItems.length > 1 && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev - 1 + mediaItems.length) % mediaItems.length); }} className="absolute -left-4 md:-left-20 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-all p-2">
+                  <ChevronLeft size={50} strokeWidth={1} />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev + 1) % mediaItems.length); }} className="absolute -right-4 md:-right-20 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-all p-2">
+                  <ChevronRight size={50} strokeWidth={1} />
+                </button>
+              </>
+            )}
+
+            <div className="w-full bg-black rounded-[32px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center min-h-[300px]">
+              {typeof mediaItems[currentIndex] === 'string' ? (
+                <img 
+                  src={mediaItems[currentIndex] as string} 
+                  className="max-w-full max-h-[80vh] object-contain select-none" 
+                  alt="popup content" 
+                />
+              ) : (
+                <div className="w-full aspect-video bg-black">
+                  <iframe
+                    src={`${getEmbedUrl((mediaItems[currentIndex] as any).url)}?autoplay=1`}
+                    className="w-full h-full"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+
+            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white/40 font-black text-[10px] uppercase tracking-[0.3em]">
+              {currentIndex + 1} / {mediaItems.length}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

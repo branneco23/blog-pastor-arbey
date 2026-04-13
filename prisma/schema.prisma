@@ -1,21 +1,31 @@
-model Blog {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  content     String
-  description String
-  imageUrl    String?
-  readingTime String?
-  // Agrega estas líneas:
-  authorId    String?  @db.ObjectId
-  author      User?    @relation(fields: [authorId], references: [id])
+// prisma/schema.prisma
 
-  categoryId  String   @db.ObjectId
-  category    Category @relation(fields: [categoryId], references: [id])
+generator client {
+  provider = "prisma-client-js"
 }
 
-// También necesitas un modelo User si no lo tienes
-model User {
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
   id    String @id @default(auto()) @map("_id") @db.ObjectId
-  name  String
+  name  String @unique
   blogs Blog[]
+}
+
+// fragmento de schema.prisma
+model Blog {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String
+  content      String
+  imageUrl     String
+  readingTime  String   @default("5 min")
+  videoUrl     String?
+  slug         String   @unique
+  categoryId   String   @db.ObjectId
+  category     Category @relation(fields: [categoryId], references: [id])
+  createdAt    DateTime @default(now())
 }

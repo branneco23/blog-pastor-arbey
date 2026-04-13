@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST() {
-  const cookieStore = await cookies();
-  cookieStore.delete('admin_session'); // Borra la llave de acceso
-  return NextResponse.json({ message: "Sesión cerrada" });
+  const response = NextResponse.json({ success: true });
+  response.cookies.set('token', '', {
+    httpOnly: true,
+    path: '/',
+    expires: new Date(0), // 👈 Expira inmediatamente = borra la cookie
+  });
+  return response;
 }

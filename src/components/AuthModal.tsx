@@ -35,6 +35,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 👈 ESTA línea hace que el navegador guarde la cookie httpOnly
         body: JSON.stringify(formData),
       });
 
