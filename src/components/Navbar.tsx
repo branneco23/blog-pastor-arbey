@@ -111,7 +111,7 @@ export default function Navbar() {
             </div>
 
             {/* BOTÓN EN VIVO */}
-            <Link href="/en-vivo" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0">
+            <Link href="/live" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute h-full w-full rounded-full bg-red-100 opacity-75"></span>
                 <span className="relative rounded-full h-2 w-2 bg-white"></span>

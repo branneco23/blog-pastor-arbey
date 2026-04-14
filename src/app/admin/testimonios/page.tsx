@@ -37,7 +37,7 @@ export default function AdminTestimonios() {
         alert("¡Testimonio publicado con éxito!");
         setTitle('');
         setYoutubeInput('');
-        router.refresh(); 
+        router.refresh();
       } else {
         const errorData = await res.json();
         alert(`Error: ${errorData.error || 'No se pudo guardar'}`);
@@ -52,16 +52,15 @@ export default function AdminTestimonios() {
   return (
     <div className="min-h-screen bg-slate-50/50 py-12 px-6">
       <div className="max-w-2xl mx-auto">
-        
+
         {/* BOTÓN RETROCEDER */}
-        <button 
+        <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-8 group"
+          className="mb-8 flex items-center gap-2 text-slate-400 hover:text-blue-600 font-black text-xs uppercase tracking-[0.2em] transition-colors group"
         >
-          <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-            <ArrowLeft size={18} />
-          </div>
-          <span className="text-xs font-black uppercase tracking-widest">Volver</span>
+          <span className="text-lg transition-transform group-hover:-translate-x-1">←</span>
+          Volver atrás
         </button>
 
         <div className="bg-white rounded-[40px] shadow-xl shadow-blue-900/5 border border-slate-100 p-10">
@@ -74,13 +73,13 @@ export default function AdminTestimonios() {
               Publicar Nuevo Testimonio
             </h2>
           </div>
-          
+
           <div className="space-y-6">
             <div>
               <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block">
                 Título del Testimonio
               </label>
-              <input 
+              <input
                 value={title}
                 className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-slate-900 placeholder:text-slate-300 transition-all"
                 placeholder="Ej: Transformación y fe..."
@@ -92,7 +91,7 @@ export default function AdminTestimonios() {
               <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block">
                 ID o Link de YouTube
               </label>
-              <input 
+              <input
                 value={youtubeInput}
                 className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-slate-900 placeholder:text-slate-300 transition-all"
                 placeholder="Pegar link o ID aquí..."
@@ -100,12 +99,11 @@ export default function AdminTestimonios() {
               />
             </div>
 
-            <button 
+            <button
               onClick={handleSave}
               disabled={isSubmitting}
-              className={`w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 ${
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 hover:-translate-y-1'
-              }`}
+              className={`w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 hover:-translate-y-1'
+                }`}
             >
               {isSubmitting ? (
                 <>

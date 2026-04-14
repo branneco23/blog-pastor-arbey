@@ -27,9 +27,14 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     await connectDB();
-    const blogs = await Blog.find().populate('categoryId').sort({ createdAt: -1 });
+    // Asegúrate de que tu modelo Blog en Mongoose tenga 'ref: Category'
+    const blogs = await Blog.find()
+      .populate('categoryId') 
+      .sort({ createdAt: -1 });
+      
     return NextResponse.json(blogs);
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error al obtener blogs:", error.message);
     return NextResponse.json([], { status: 500 });
   }
 }
