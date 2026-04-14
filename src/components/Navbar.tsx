@@ -9,7 +9,7 @@ import {
   PlusCircle,
   LayoutDashboard,
   Tags,
-  MessageSquare 
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from './AuthModal';
@@ -65,12 +65,11 @@ export default function Navbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm transition-all duration-700">
-        <div 
-          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${
-            isAdmin 
-              ? 'max-w-[98%] 2xl:max-w-[1600px]' 
+        <div
+          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${isAdmin
+              ? 'max-w-[98%] 2xl:max-w-[1600px]'
               : 'max-w-7xl'
-          }`}
+            }`}
         >
 
           {/* LOGO - shrink-0 para que no se aplaste */}
@@ -90,18 +89,23 @@ export default function Navbar() {
 
           {/* CONTENEDOR DERECHO - flex-1 para empujar el contenido */}
           <div className="flex items-center justify-end gap-3 flex-1 ml-4">
-            
+
             {/* Menú Público */}
             <div className="hidden lg:flex items-center gap-1">
-              {['/', '/about', '/testimonios'].map((path) => (
+              {[
+                { path: '/', label: 'Inicio' },
+                { path: '/about', label: 'Sobre Mí' },
+                { path: '/testimonios', label: 'Testimonios' }
+              ].map((link) => (
                 <Link
-                  key={path}
-                  href={path}
-                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
-                    pathname === path ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600 hover:bg-slate-50'
-                  }`}
+                  key={link.path}
+                  href={link.path}
+                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${pathname === link.path
+                      ? 'text-blue-600 bg-blue-50/50'
+                      : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
-                  {path === '/' ? 'Inicio' : path.substring(1).charAt(0).toUpperCase() + path.slice(2)}
+                  {link.label}
                 </Link>
               ))}
             </div>
@@ -119,12 +123,11 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-2 pl-4 border-l border-slate-100 animate-in fade-in slide-in-from-right-2">
                 <div className="hidden md:flex items-center gap-1">
-                  
+
                   <Link
                     href="/admin/dashboard"
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                      pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
+                      }`}
                   >
                     <LayoutDashboard size={16} /> <span className="hidden xl:inline">Doctrinas</span>
                   </Link>
@@ -133,18 +136,16 @@ export default function Navbar() {
                     <>
                       <Link
                         href="/admin/testimonios"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          pathname === '/admin/testimonios' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/testimonios' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
+                          }`}
                       >
                         <MessageSquare size={16} /> <span className="hidden xl:inline">Testimonios</span>
                       </Link>
 
                       <Link
                         href="/admin/categorias"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
+                          }`}
                       >
                         <Tags size={16} /> <span className="hidden xl:inline">Categorías</span>
                       </Link>

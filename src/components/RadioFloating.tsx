@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { Radio, Play, Pause, Minus } from 'lucide-react';
-import ReactPlayer from 'react-player';
+// 1. IMPORTACIÓN DINÁMICA: Esto soluciona el error de tipos y mejora el SSR
+import dynamic from 'next/dynamic';
+const ReactPlayer = dynamic(() => import('react-player').then(mod => mod.default), { ssr: false });
 
 export default function RadioFloating() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Enlace de YouTube Live
   const YOUTUBE_LIVE_URL = 'https://www.youtube.com/watch?v=Ye0AY30-ml4'; 
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function RadioFloating() {
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
-      {/* REPRODUCTOR OCULTO PERO ACTIVO */}
+      {/* REPRODUCTOR OCULTO */}
       <div 
         style={{ 
           position: 'absolute', 
@@ -31,28 +32,29 @@ export default function RadioFloating() {
           overflow: 'hidden' 
         }}
       >
+        {/* Usamos el componente cargado dinámicamente y forzamos el tipo a any para el build */}
         <ReactPlayer
-          url={YOUTUBE_LIVE_URL}
-          playing={isPlaying}
-          volume={1}
-          muted={false}
-          width="100%"
-          height="100%"
-          config={{
-            youtube: {
-              // CORRECCIÓN: playerVars debe ir dentro de un objeto literal simple
-              // Si TS sigue dando problemas, usamos 'as any' para forzar la configuración de la API de YT
-              playerVars: { 
-                autoplay: 1,
-                controls: 0,
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0
-              } as any
-            }
-          }}
-          onPlay={() => console.log("Radio iniciada")}
-          onError={(e) => console.error("Error en radio:", e)}
+          {...({
+            url: YOUTUBE_LIVE_URL,
+            playing: isPlaying,
+            volume: 1,
+            muted: false,
+            width: "100%",
+            height: "100%",
+            config: {
+              youtube: {
+                playerVars: { 
+                  autoplay: 1,
+                  controls: 0,
+                  modestbranding: 1,
+                  rel: 0,
+                  showinfo: 0
+                }
+              }
+            },
+            onPlay: () => console.log("Radio iniciada"),
+            onError: (e: any) => console.error("Error en radio:", e)
+          } as any)}
         />
       </div>
 

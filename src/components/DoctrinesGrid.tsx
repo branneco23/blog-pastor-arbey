@@ -7,10 +7,10 @@ interface Doctrine {
   _id: string;
   title: string;
   description: string;
-  category: string;
-  image: string;
+  imageUrl?: string; // El ? la hace opcional
   readingTime: string;
   createdAt: string;
+  categoryId?: any;
 }
 
 export default function DoctrineGrid({ doctrines = [] }: { doctrines: Doctrine[] }) {
@@ -18,18 +18,26 @@ export default function DoctrineGrid({ doctrines = [] }: { doctrines: Doctrine[]
   const [activeCategory, setActiveCategory] = useState('Todas');
 
   // Paso 3: Filtrar las doctrinas lógicamente
+  // CORRECCIÓN EN EL FILTRADO:
   const filteredDoctrines = activeCategory === 'Todas'
     ? doctrines
-    : doctrines.filter(item => item.category === activeCategory);
+    : doctrines.filter(item => {
+      // Si categoryId es un objeto (populate), comparamos con su nombre
+      const categoryName = typeof item.categoryId === 'object'
+        ? item.categoryId?.name
+        : item.categoryId;
+
+      return categoryName === activeCategory;
+    });
 
   return (
     <section className="bg-slate-50/50 py-16">
       <div className="max-w-7xl mx-auto px-6">
 
         {/* Paso 4: Pasar la categoría activa y la función para cambiarla */}
-        <CategoryFilter 
-          activeCategory={activeCategory} 
-          onCategoryChange={setActiveCategory} 
+        <CategoryFilter
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
         />
 
         <div className="mt-12 mb-10">
