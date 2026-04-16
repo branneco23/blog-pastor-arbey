@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { signToken } from "@/lib/jwt";
-import dbConnect from "@/lib/db"; // Asegúrate de que esta sea la ruta a tu db.ts o mongodb.ts
 import User from "@/models/User"; // Tu modelo de Mongoose
 import bcrypt from "bcryptjs"; // Para comparar la contraseña real con la encriptada
+import connectDB from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
-    await dbConnect(); // 1. Conectar a MongoDB
+    await connectDB(); // 1. Conectar a MongoDB
     const { email, password } = await req.json();
 
     if (!email || !password) {

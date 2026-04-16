@@ -1,22 +1,18 @@
-// src/models/User.ts
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema, model, models } from 'mongoose';
 
 const UserSchema = new Schema({
   name: String,
-  email: { type: String, unique: true },
-  password: { type: String, select: false }, // Nota: 'select: false' ocultará el password en las consultas
-  role: {
-    type: String,
-    enum: ["admin", "user"],
-    default: "user",
-  },
-  status: {
-    type: String,
-    enum: ["active", "suspended"],
-    default: "active",
-  },
-});
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'editor', 'user'], default: 'user' },
+  isBlocked: { type: Boolean, default: false },
+  // Permisos granulares
+  permissions: {
+    canEditBlogs: { type: Boolean, default: false },
+    canEditCategories: { type: Boolean, default: false },
+    canEditTestimonies: { type: Boolean, default: false },
+  }
+}, { timestamps: true });
 
-// Cambia la última línea por estas dos:
 const User = models.User || model('User', UserSchema);
 export default User;

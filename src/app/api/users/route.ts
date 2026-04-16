@@ -1,4 +1,4 @@
-import connectDB from '@/lib/db'; // Quitamos las llaves si es export default
+import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs'; // Asegúrate de instalarlo: npm i bcryptjs

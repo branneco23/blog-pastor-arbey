@@ -6,12 +6,11 @@ import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {
   ssr: false,
-  loading: () => <div className="h-64 bg-slate-50 animate-pulse rounded-2xl border border-slate-200" />
+  loading: () => <div className="h-64 bg-slate-50 animate-pulse rounded-[32px] border border-slate-200" />
 });
 
 interface Category {
-  id?: string;
-  _id?: string;
+  _id: string; 
   name: string;
 }
 
@@ -30,9 +29,6 @@ export default function AdminBlogForm() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Función auxiliar para obtener el id sin importar si es id o _id
-  const getCatId = (cat: Category) => cat.id ?? cat._id ?? '';
-
   useEffect(() => {
     const fetchCats = async () => {
       try {
@@ -41,7 +37,7 @@ export default function AdminBlogForm() {
         const data: Category[] = await res.json();
         setDbCategories(data);
         if (data.length > 0) {
-          setFormData(prev => ({ ...prev, categoryId: getCatId(data[0]) }));
+          setFormData(prev => ({ ...prev, categoryId: data[0]._id }));
         }
       } catch (error) {
         console.error("Error cargando categorías:", error);
@@ -69,33 +65,29 @@ export default function AdminBlogForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!content.trim() || content === '<p><br></p>') {
+      alert("Por favor, escribe el contenido.");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const payload = { ...formData, content };
-
       const res = await fetch('/api/blogs', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Si tu API usa cookies de sesión (next-auth, etc.) esto es automático.
-          // Si usa Bearer token guardado en localStorage, descomenta:
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        credentials: 'include', // 👈 Envía cookies de sesión automáticamente (fix del 401)
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...formData, content }),
       });
 
       if (res.ok) {
-        alert('¡Enseñanza publicada con éxito!');
+        alert('¡Enseñanza publicada!');
         router.push('/admin/dashboard');
       } else {
-        const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
+        const errorData = await res.json();
         alert(`Error: ${errorData.error}`);
-        if (res.status === 401) router.push('/login');
       }
     } catch (err) {
-      alert('Error de conexión al servidor');
+      alert('Error de conexión');
     } finally {
       setLoading(false);
     }
@@ -103,125 +95,45 @@ export default function AdminBlogForm() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="mb-8 flex items-center gap-2 text-slate-400 hover:text-blue-600 font-black text-xs uppercase tracking-[0.2em] transition-colors group"
-      >
-        <span className="text-lg transition-transform group-hover:-translate-x-1">←</span>
-        Volver atrás
+      <button type="button" onClick={() => router.back()} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-blue-600 font-black text-xs uppercase tracking-[0.2em]">
+        <span>←</span> Volver al Panel
       </button>
 
       <form onSubmit={handleSubmit} className="p-8 space-y-8 bg-white rounded-[40px] shadow-sm border border-slate-100">
-
-        {/* Fila: Título y Categoría */}
+        <h2 className="text-2xl font-black text-slate-900 uppercase">Nueva Enseñanza</h2>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Título de la Enseñanza</label>
-            <input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              placeholder="Ej: La importancia de la oración"
-            />
+            <label className="text-xs font-black text-slate-400 uppercase">Título</label>
+            <input name="title" value={formData.title} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Doctrina / Categoría</label>
-            <select
-              name="categoryId"
-              value={formData.categoryId}
-              onChange={handleChange}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
-            >
+            <label className="text-xs font-black text-slate-400 uppercase">Categoría</label>
+            <select name="categoryId" value={formData.categoryId} onChange={handleChange} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none appearance-none">
               {dbCategories.map((cat) => (
-                <option key={getCatId(cat)} value={getCatId(cat)}>
-                  {cat.name}
-                </option>
+                <option key={cat._id} value={cat._id}>{cat.name}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Descripción Corta */}
         <div className="space-y-2">
-          <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Descripción Corta (Resumen)</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-            rows={2}
-            className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-            placeholder="Un resumen breve para la tarjeta principal..."
-          />
+          <label className="text-xs font-black text-slate-400 uppercase">Descripción</label>
+          <textarea name="description" value={formData.description} onChange={handleChange} required className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none resize-none" />
         </div>
 
-        {/* Fila: Imagen y Tiempo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">URL de la Imagen (Portada)</label>
-            <input
-              name="imageUrl"
-              value={formData.imageUrl}
-              onChange={handleChange}
-              required
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="https://images.unsplash.com/..."
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tiempo de Lectura</label>
-            <input
-              name="readingTime"
-              value={formData.readingTime}
-              onChange={handleChange}
-              required
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Ej: 5 min"
-            />
-          </div>
+          <input name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="URL Imagen" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none" />
+          <input name="readingTime" value={formData.readingTime} onChange={handleChange} placeholder="Tiempo (ej: 5 min)" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none" />
         </div>
 
-        {/* Video Opcional */}
-        <div className="space-y-2">
-          <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Link de YouTube (Opcional)</label>
-          <input
-            name="videoUrl"
-            value={formData.videoUrl}
-            onChange={handleChange}
-            className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
+        <div className="bg-white rounded-[28px] overflow-hidden border border-slate-200">
+          <ReactQuill theme="snow" value={content} onChange={setContent} modules={modules} />
         </div>
 
-        {/* Editor de Texto Enriquecido */}
-        <div className="space-y-2">
-          <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cuerpo Completo de la Enseñanza</label>
-          <div className="bg-white rounded-[24px] overflow-hidden border border-slate-200">
-            <ReactQuill
-              theme="snow"
-              value={content}
-              onChange={setContent}
-              modules={modules}
-              placeholder="Escribe aquí toda la palabra..."
-            />
-          </div>
-        </div>
-
-        {/* Botón de envío */}
-        <button
-          type="submit"
-          disabled={loading || dbCategories.length === 0}
-          className={`w-full py-5 rounded-[24px] font-black text-sm uppercase tracking-[0.2em] transition-all ${
-            loading
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200'
-          }`}
-        >
-          {loading ? 'Subiendo enseñanza...' : 'Publicar ahora'}
+        <button type="submit" disabled={loading} className="w-full py-6 rounded-[28px] font-black text-sm uppercase tracking-[0.2em] bg-blue-600 text-white shadow-xl">
+          {loading ? 'Subiendo...' : 'Publicar ahora'}
         </button>
       </form>
     </div>

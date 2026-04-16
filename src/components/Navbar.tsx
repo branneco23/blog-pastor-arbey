@@ -59,25 +59,23 @@ export default function Navbar() {
     return <nav className="sticky top-0 z-50 bg-white border-b h-20" />;
   }
 
-  // Determinamos si debe expandirse
   const isAdmin = user?.role === 'admin';
 
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm transition-all duration-700">
         <div
-          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${isAdmin
-              ? 'max-w-[98%] 2xl:max-w-[1600px]'
-              : 'max-w-7xl'
-            }`}
+          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${
+            isAdmin ? 'max-w-[98%] 2xl:max-w-[1600px]' : 'max-w-7xl'
+          }`}
         >
 
-          {/* LOGO - shrink-0 para que no se aplaste */}
+          {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden">
-              <img src="/logo-ipuc.webp" alt="IPUC" className="w-10 h-10 object-contain" />
+              <img src="/logo-ipuc.png" alt="IPUC" className="w-10 h-10 object-contain" />
             </div>
-            <div className="flex flex-col hidden sm:flex">
+            <div className="hidden sm:flex flex-col">
               <span className="font-black text-lg text-slate-900 leading-none tracking-tighter">
                 Pastor Arbey Bustamante
               </span>
@@ -87,7 +85,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* CONTENEDOR DERECHO - flex-1 para empujar el contenido */}
+          {/* CONTENEDOR DERECHO */}
           <div className="flex items-center justify-end gap-3 flex-1 ml-4">
 
             {/* Menú Público */}
@@ -100,10 +98,11 @@ export default function Navbar() {
                 <Link
                   key={link.path}
                   href={link.path}
-                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${pathname === link.path
+                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
+                    pathname === link.path
                       ? 'text-blue-600 bg-blue-50/50'
                       : 'text-slate-600 hover:bg-slate-50'
-                    }`}
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -111,7 +110,10 @@ export default function Navbar() {
             </div>
 
             {/* BOTÓN EN VIVO */}
-            <Link href="/live" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0">
+            <Link
+              href="/live"
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute h-full w-full rounded-full bg-red-100 opacity-75"></span>
                 <span className="relative rounded-full h-2 w-2 bg-white"></span>
@@ -119,35 +121,47 @@ export default function Navbar() {
               <span className="uppercase tracking-tighter">En Vivo</span>
             </Link>
 
-            {/* SECCIÓN DINÁMICA DE ADMIN */}
+            {/* SECCIÓN DINÁMICA */}
             {user ? (
               <div className="flex items-center gap-2 pl-4 border-l border-slate-100 animate-in fade-in slide-in-from-right-2">
                 <div className="hidden md:flex items-center gap-1">
 
                   <Link
                     href="/admin/dashboard"
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/dashboard' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                      }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                      pathname === '/admin/dashboard'
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
                   >
-                    <LayoutDashboard size={16} /> <span className="hidden xl:inline">Doctrinas</span>
+                    <LayoutDashboard size={16} />
+                    <span className="hidden xl:inline">Doctrinas</span>
                   </Link>
 
                   {isAdmin && (
                     <>
                       <Link
                         href="/admin/testimonios"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/testimonios' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                          }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          pathname === '/admin/testimonios'
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-slate-500 hover:bg-slate-50'
+                        }`}
                       >
-                        <MessageSquare size={16} /> <span className="hidden xl:inline">Testimonios</span>
+                        <MessageSquare size={16} />
+                        <span className="hidden xl:inline">Testimonios</span>
                       </Link>
 
                       <Link
                         href="/admin/categorias"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/categorias' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'
-                          }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          pathname === '/admin/categorias'
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-slate-500 hover:bg-slate-50'
+                        }`}
                       >
-                        <Tags size={16} /> <span className="hidden xl:inline">Categorías</span>
+                        <Tags size={16} />
+                        <span className="hidden xl:inline">Categorías</span>
                       </Link>
 
                       <Link
@@ -164,15 +178,22 @@ export default function Navbar() {
                 {/* Perfil Mini */}
                 <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-full pr-3 border border-slate-100 shrink-0">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs uppercase">
-                    {user.name.charAt(0)}
+                    {/* 👇 FIX: optional chaining para evitar crash si name es undefined */}
+                    {user?.name?.charAt(0) ?? '?'}
                   </div>
-                  <button onClick={handleLogout} className="p-1 text-slate-400 hover:text-red-500 transition-colors">
+                  <button
+                    onClick={handleLogout}
+                    className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                  >
                     <LogOut size={16} />
                   </button>
                 </div>
               </div>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-800 transition shrink-0 flex items-center gap-2">
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-800 transition shrink-0 flex items-center gap-2"
+              >
                 <LogIn size={16} /> Ingresar
               </button>
             )}

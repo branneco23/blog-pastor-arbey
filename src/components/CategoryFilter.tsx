@@ -64,6 +64,48 @@ export default function CategoryFilter({ activeCategory, onCategoryChange }: any
     }
   };
 
+  // FUNCIÓN PARA ELIMINAR
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("¿Estás seguro de eliminar esta doctrina?")) return;
+
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (res.ok) {
+        // Refrescar la lista de categorías después de borrar
+        fetchCategories();
+      } else {
+        alert("Error al eliminar");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  // FUNCIÓN PARA EDITAR
+  const handleEditCategory = async (id: string, currentName: string) => {
+    const newName = prompt("Editar nombre de la doctrina:", currentName);
+    if (!newName || newName === currentName) return;
+
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, newName: newName.trim() }),
+      });
+
+      if (res.ok) {
+        fetchCategories();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
   return (
     <div className="flex flex-wrap justify-center items-center gap-3 py-8 bg-white px-4">
       {categories.map((cat) => (

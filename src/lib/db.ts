@@ -1,36 +1,33 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("Por favor define MONGODB_URI en su archivo .env.local");
+  throw new Error("⚠️ Por favor, define la variable MONGODB_URI en el archivo .env");
 }
 
-/**
- * Global se usa aquí para mantener la conexión cacheada a través de
- * las recargas en caliente (hot reloading) de Next.js en desarrollo.
- */
+// Para evitar múltiples conexiones en desarrollo
 let cached = (global as any).mongoose;
 
 if (!cached) {
   cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-export async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
+async function connectDB() {
+  if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+      console.log(`✅ Conectado a MongoDB en modo: ${process.env.NODE_ENV}`);
       return mongoose;
     });
   }
-
+  
   try {
     cached.conn = await cached.promise;
   } catch (e) {
@@ -41,5 +38,4 @@ export async function connectDB() {
   return cached.conn;
 }
 
-// Opcional: Si en algún archivo lo importas sin llaves { }, añade esto:
 export default connectDB;
