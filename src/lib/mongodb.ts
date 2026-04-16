@@ -1,7 +1,7 @@
 // En tu archivo de conexión
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27018/blog-arbey";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://root:Aa8ge0050@127.0.0.1:27018/blog-arbey?authSource=admin";
 
 if (!MONGODB_URI) {
   throw new Error("Por favor define MONGODB_URI en tu archivo .env");

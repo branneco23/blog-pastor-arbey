@@ -13,7 +13,7 @@ if (!cached) {
   cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-async function connectDB() {
+export const connectDB = async() => {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {

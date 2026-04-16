@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models/User'; // Ajusta si tu modelo se llama diferente
+import connectDB from '@/lib/db';
+import User from '@/models/User'; // Ajusta si tu modelo se llama diferente
 import { verifyToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 

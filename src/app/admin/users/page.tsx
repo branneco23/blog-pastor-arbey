@@ -3,20 +3,19 @@
 import { useEffect, useState } from 'react';
 import { User, Trash2, Ban, CheckCircle, ShieldCheck } from 'lucide-react';
 
-// Interfaz para el tipado de TypeScript
+// Interfaz actualizada para coincidir exactamente con tu JSON de MongoDB
 interface UserData {
   _id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'user';
-  status: 'active' | 'suspended';
+  nombre: string;              // Cambiado de name
+  "correo electrónico": string; // Cambiado de email (usamos comillas por el espacio y tilde)
+  rol: string;                 // Cambiado de role
+  estado: string;              // Cambiado de status
 }
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Función para traer usuarios desde tu servidor Docker
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/admin/users');
@@ -34,29 +33,27 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, []);
 
-  // Función para cambiar el estado (Activo / Suspendido)
   const toggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    // Ajustado para manejar 'activo' en español
+    const newStatus = currentStatus === 'activo' ? 'suspendido' : 'activo';
     
-    if (confirm(`¿Deseas cambiar el estado del usuario a ${newStatus === 'active' ? 'Activo' : 'Suspendido'}?`)) {
+    if (confirm(`¿Deseas cambiar el estado del usuario a ${newStatus}?`)) {
       try {
-        // Ajustamos a PUT y a la ruta base de usuarios si no tienes creada la sub-ruta /status
         await fetch('/api/admin/users', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             userId: id, 
-            updateData: { status: newStatus } 
+            updateData: { estado: newStatus } // Enviamos 'estado' en lugar de 'status'
           })
         });
-        fetchUsers(); // Recarga la lista para ver el cambio
+        fetchUsers();
       } catch (error) {
         alert("Error al actualizar el estado");
       }
     }
   };
 
-  // Función para eliminar usuario (Opcional pero recomendada)
   const handleDelete = async (id: string) => {
     if (confirm("¿Estás seguro de eliminar este usuario? Esta acción es irreversible.")) {
       try {
@@ -107,40 +104,40 @@ export default function AdminUsersPage() {
                 <tr key={user._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="p-6">
                     <div className="flex flex-col">
-                      <span className="font-bold text-slate-800 text-lg">{user.name}</span>
-                      <span className="text-xs text-slate-400">{user.email}</span>
+                      <span className="font-bold text-slate-800 text-lg">{user.nombre}</span>
+                      <span className="text-xs text-slate-400">{user["correo electrónico"]}</span>
                     </div>
                   </td>
                   <td className="p-6">
                     <span className={`px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase flex items-center gap-1.5 w-fit ${
-                      user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                      user.rol === 'administrador' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {user.role === 'admin' && <ShieldCheck size={14} />}
-                      {user.role}
+                      {user.rol === 'administrador' && <ShieldCheck size={14} />}
+                      {user.rol}
                     </span>
                   </td>
                   <td className="p-6">
                     <span className={`flex items-center gap-2 text-[10px] font-black uppercase ${
-                      user.status === 'active' ? 'text-emerald-500' : 'text-red-500'
+                      user.estado === 'activo' ? 'text-emerald-500' : 'text-red-500'
                     }`}>
                       <span className={`h-2 w-2 rounded-full animate-pulse ${
-                        user.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'
+                        user.estado === 'activo' ? 'bg-emerald-500' : 'bg-red-500'
                       }`}></span>
-                      {user.status === 'active' ? 'Activo' : 'Suspendido'}
+                      {user.estado}
                     </span>
                   </td>
                   <td className="p-6 text-right">
                     <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
-                        onClick={() => toggleStatus(user._id, user.status)}
-                        title={user.status === 'active' ? 'Suspender' : 'Activar'}
+                        onClick={() => toggleStatus(user._id, user.estado)}
+                        title={user.estado === 'activo' ? 'Suspender' : 'Activar'}
                         className={`p-3 rounded-2xl transition-all ${
-                          user.status === 'active' 
+                          user.estado === 'activo' 
                             ? 'text-orange-500 bg-orange-50 hover:bg-orange-100' 
                             : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'
                         }`}
                       >
-                        {user.status === 'active' ? <Ban size={20} /> : <CheckCircle size={20} />}
+                        {user.estado === 'activo' ? <Ban size={20} /> : <CheckCircle size={20} />}
                       </button>
                       <button 
                         onClick={() => handleDelete(user._id)}

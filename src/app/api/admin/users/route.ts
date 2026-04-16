@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb"; // Ajusta según tu carpeta lib
-import User from "@/models/User"; // Ajusta según tu carpeta models
+import connectDB from "@/lib/db"; // Asegúrate que el nombre sea mongodb.ts o db.ts
+import User from "@/models/User"; // Verifica si tu modelo es 'User' o 'Schema'
 import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 
@@ -8,19 +8,20 @@ export async function GET() {
   try {
     await connectDB();
 
-    // 1. Validar el Admin (Opcional para pruebas, pero recomendado)
+    // Validación de Admin
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
-    if (!token)
-      return NextResponse.json({ error: "No hay token" }, { status: 401 });
+    const payload = token ? await verifyToken(token) : null;
 
-    // 2. Buscar en la base de datos 'blog-arbey' -> colección 'users'
-    const users = await User.find({}).select("-password");
+    if (!payload || payload.role !== "admin") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
 
-    console.log("Usuarios encontrados:", users.length); // Esto saldrá en tu terminal de VS Code
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1 });
     return NextResponse.json(users);
-  } catch (error: any) {
-    console.error("Error en GET /api/admin/users:", error);
+  } catch (error) {
     return NextResponse.json({ error: "Error de servidor" }, { status: 500 });
   }
 }
