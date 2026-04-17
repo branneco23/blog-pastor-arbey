@@ -73,7 +73,7 @@ export default function Navbar() {
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden">
-              <img src="/logo-ipuc.png" alt="IPUC" className="w-10 h-10 object-contain" />
+              <img src="/logo-ipuc.webp" alt="IPUC" className="w-10 h-10 object-contain" />
             </div>
             <div className="hidden sm:flex flex-col">
               <span className="font-black text-lg text-slate-900 leading-none tracking-tighter">

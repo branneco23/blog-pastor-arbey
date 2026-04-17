@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // 👈 Importamos Link
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -35,13 +36,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // 👈 ESTA línea hace que el navegador guarde la cookie httpOnly
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
-      // Dentro de handleSubmit en AuthModal.tsx
       if (response.ok) {
         const userObj = data.user || data;
 
@@ -51,16 +51,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           email: userObj.email
         };
 
-        // 1. Guardamos los nuevos datos (Limpiando los viejos)
         localStorage.removeItem('user_data');
         localStorage.setItem('user_data', JSON.stringify(userToSave));
 
-        // 2. IMPORTANTE: Gritarle al Navbar que el usuario cambió
         window.dispatchEvent(new Event('user-login'));
-
         onClose();
 
-        // 3. Redirigir y refrescar para limpiar estados residuales
         router.push(userToSave.role === 'admin' ? '/admin/crear-blog' : '/');
         setTimeout(() => router.refresh(), 100);
       } else {
@@ -139,6 +135,19 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
+
+            {/* ENLACE DE RESTABLECIMIENTO */}
+            {isLogin && (
+              <div className="flex justify-end px-2">
+                <Link
+                  href="/auth/forgot-password"
+                  onClick={onClose}
+                  className="text-xs text-slate-400 hover:text-blue-600 font-semibold transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+            )}
 
             <button
               type="submit"

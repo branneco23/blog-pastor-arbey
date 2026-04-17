@@ -9,7 +9,7 @@ export function Footer() {
           {/* About */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src="/logo-ipuc" alt="Logo IPUC" className="h-10 w-auto object-contain" />
+              <img src="/logo-ipuc.webp" alt="Logo IPUC" className="h-10 w-auto object-contain" />
               <span className="font-bold text-white">Doctrinas IPUC</span>
             </div>
             <p className="text-sm">

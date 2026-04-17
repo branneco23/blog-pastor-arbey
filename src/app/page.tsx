@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import CategoryFilter from '@/components/CategoryFilter';
 import BlogCard from '@/components/BlogCard'; 
 import Hero from '@/components/Hero';
+import RadioPrincipal from '@/components/RadioFloating';
 import { Footer } from '@/components/Footer';
 
 export default function Home() {
@@ -99,6 +100,7 @@ export default function Home() {
           </>
         )}
       </div>
+      <RadioPrincipal/>
       <Footer />
     </main>
   );
