@@ -1,23 +1,45 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Post } from '@/models/Post'; // Reutilizamos la colección o creamos una Config
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  await connectDB();
-  // Buscamos un documento que guarde la config global
-  const liveStatus = await Post.findOne({ isGlobalConfig: true });
-  return NextResponse.json(liveStatus || { isLive: false, youtubeId: '' });
+  try {
+    const config = await prisma.liveConfig.findUnique({
+      where: { id: 'main-live' }
+    });
+    return NextResponse.json(config || { isLive: false, youtubeId: '', title: '' });
+  } catch (error) {
+    return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-  await connectDB();
-  const { isLive, youtubeId, title } = await req.json();
-  
-  const updated = await Post.findOneAndUpdate(
-    { isGlobalConfig: true },
-    { isLive, youtubeId, title, isGlobalConfig: true },
-    { upsert: true, new: true }
-  );
-  
-  return NextResponse.json(updated);
+  try {
+    const body = await req.json();
+    const { isLive, youtubeId, title } = body;
+
+    // Validación básica para evitar guardar datos vacíos
+    if (!youtubeId && isLive) {
+      return NextResponse.json({ error: "Falta el ID de YouTube" }, { status: 400 });
+    }
+
+    const config = await prisma.liveConfig.upsert({
+      where: { id: 'main-live' },
+      update: {
+        isLive,
+        youtubeId,
+        title: title || "Transmisión en Vivo",
+      },
+      create: {
+        id: 'main-live',
+        isLive,
+        youtubeId,
+        title: title || "Transmisión en Vivo",
+      },
+    });
+
+    return NextResponse.json(config);
+  } catch (error) {
+    console.error("DEBUG PRISMA ERROR:", error);
+    return NextResponse.json({ error: "Fallo en la base de datos" }, { status: 500 });
+  }
 }

@@ -1,7 +1,16 @@
-/** @type {import('next').NextConfig} */
+// next.config.ts
 const nextConfig = {
   images: {
-    unoptimized: true, // Requerido para exportación estática si usas <Image /> de Next
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com', // O el host que uses para tus fotos
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
+    ],
   },
 };
 

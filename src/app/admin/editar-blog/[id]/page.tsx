@@ -179,7 +179,7 @@ export default function EditBlogPage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
       <button onClick={() => router.back()} className="mb-8 flex items-center gap-2 text-slate-400 font-black text-xs uppercase tracking-widest group">
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform"/> Regresar
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform"/> Volver atrás
       </button>
 
       <form onSubmit={handleSubmit} className="p-8 space-y-8 bg-white rounded-[40px] shadow-sm border border-slate-100">

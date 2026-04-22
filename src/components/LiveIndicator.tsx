@@ -1,129 +1,98 @@
 'use client';
+import { useState } from 'react';
+import { X, Loader2, Play, Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import Swal from 'sweetalert2';
-import {
-  MessageCircle, Heart, ThumbsUp, Flame, Star, Share2, Users
-} from 'lucide-react';
-
-// 1. Define la interfaz de lo que necesita el reproductor
-interface PlayerProps {
-  url: string;
-  width?: string | number;
-  height?: string | number;
-  playing?: boolean;
-  controls?: boolean;
-  muted?: boolean;
+interface Props {
+  onClose: () => void;
 }
 
-// 2. Aplica el tipo al componente dinámico
-const ReactPlayer = dynamic<PlayerProps>(
-  () => import('react-player').then((mod) => mod.default),
-  { ssr: false }
+// Icono de YouTube manual para evitar errores de Lucide
+const YoutubeIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor" />
+  </svg>
 );
 
-export default function LiveStreamSection() {
-  const [mounted, setMounted] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [isDomReady, setIsDomReady] = useState(false);
+export default function LiveConfigModal({ onClose }: Props) {
+  const router = useRouter();
+  const [youtubeId, setYoutubeId] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
+  const handleSaveAndRedirect = async () => {
+    if (!youtubeId) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isLive: true,
+          youtubeId: youtubeId,
+          title: "Transmisión en Vivo - IPUC Neiva"
+        }),
+      });
 
-    const handleAuthAndLive = async () => {
-      const savedUser = localStorage.getItem('user_data');
-      const user = savedUser ? JSON.parse(savedUser) : null;
-
-      if (user?.role === 'admin') {
-        const { value: url } = await Swal.fire({
-          title: 'Configurar Transmisión',
-          text: 'Pega el enlace de YouTube para activar la señal.',
-          input: 'text',
-          inputPlaceholder: 'https://www.youtube.com/watch?v=...',
-          confirmButtonText: 'Cargar En Vivo',
-          confirmButtonColor: '#2563eb',
-          allowOutsideClick: false,
-          customClass: { popup: 'rounded-[32px]' }
-        });
-
-        setVideoUrl(url || 'https://www.youtube.com/watch?v=Ye0AY30-ml4');
-      } else {
-        setVideoUrl('https://www.youtube.com/watch?v=Ye0AY30-ml4');
+      if (res.ok) {
+        onClose();
+        router.push('/live');
+        router.refresh();
       }
-
-      // Evita el AbortError esperando la estabilidad del DOM
-      setTimeout(() => setIsDomReady(true), 1500);
-    };
-
-    handleAuthAndLive();
-  }, []);
-
-  if (!mounted) return null;
+    } catch (error) {
+      console.error("Error al guardar:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <section className="bg-blue-600 py-12 md:py-20 px-4 md:px-6 min-h-screen">
-      <div className="max-w-6xl mx-auto text-center mb-12">
-        <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tighter">Transmisiones en Vivo</h2>
-        <p className="text-blue-100 opacity-90">Únete a nuestras predicaciones en tiempo real</p>
-      </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose} />
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 bg-white rounded-[40px] shadow-2xl overflow-hidden">
-        <div className="lg:col-span-2 flex flex-col border-r border-slate-100">
-          <div className="relative aspect-video bg-black flex items-center justify-center">
-            {isDomReady && videoUrl ? (
-              <ReactPlayer
-                url={videoUrl}
-                width="100%"
-                height="100%"
-                controls={true}
-                playing={true}
-                muted={false}
+      <div className="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl p-8 animate-in zoom-in duration-300">
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-300 hover:text-slate-900 transition-colors">
+          <X size={24} />
+        </button>
+
+        <div className="flex flex-col items-center text-center">
+          <div className="w-20 h-20 bg-red-50 rounded-[30px] flex items-center justify-center text-red-600 mb-6">
+            <YoutubeIcon />
+          </div>
+          
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">Panel de Señal</h2>
+          <p className="text-slate-500 text-sm mb-8">Ingresa el ID del video para habilitar la transmisión.</p>
+
+          <div className="w-full space-y-6">
+            <div className="text-left">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">ID de YouTube</label>
+              <input 
+                type="text" 
+                value={youtubeId}
+                onChange={(e) => setYoutubeId(e.target.value)}
+                placeholder="Ej: dQw4w9WgXcQ"
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-mono focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
               />
-            ) : (
-              <div className="text-blue-400 font-bold animate-pulse text-sm">Sincronizando señal...</div>
-            )}
-          </div>
-
-          <div className="p-8 md:p-10">
-            <div className="flex flex-col gap-4">
-              <span className="bg-blue-600 text-white text-[10px] font-black uppercase px-4 py-1.5 rounded-full w-fit">En Directo</span>
-              <h3 className="text-xl md:text-2xl font-black text-slate-900">EN VIVO: Transmisión Actual</h3>
-              <p className="text-slate-500 italic font-medium">Pastor Arbey Bustamante — IPUC Neiva</p>
-
-              <div className="flex gap-3 mt-4 overflow-x-auto pb-4 no-scrollbar">
-                {[
-                  { icon: <ThumbsUp size={18} />, label: 'Me gusta', color: 'bg-yellow-50 text-yellow-600' },
-                  { icon: <Heart size={18} />, label: 'Me encanta', color: 'bg-pink-50 text-pink-600' },
-                  { icon: <Star size={18} />, label: 'Aleluya', color: 'bg-purple-50 text-purple-600' },
-                  { icon: <Flame size={18} />, label: 'Amén', color: 'bg-orange-50 text-orange-600' },
-                ].map((btn, i) => (
-                  <button key={i} className={`${btn.color} flex flex-col items-center gap-1.5 px-6 py-3 rounded-2xl shadow-sm shrink-0 hover:scale-105 transition-all border border-current/10`}>
-                    {btn.icon}
-                    <span className="text-[10px] font-black uppercase tracking-tighter">{btn.label}</span>
-                  </button>
-                ))}
-              </div>
+              <p className="mt-3 flex items-center gap-2 text-[10px] text-blue-500 font-bold bg-blue-50 py-2 px-3 rounded-lg">
+                <Info size={12} /> El ID son los caracteres después de "v="
+              </p>
             </div>
-          </div>
-        </div>
 
-        <div className="bg-[#0b1b3d] flex flex-col h-[400px] lg:h-auto">
-          <div className="p-5 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-white">Chat en vivo</span>
-            </div>
-            <Share2 size={16} className="text-blue-400" />
-          </div>
-          <div className="flex-grow flex items-center justify-center opacity-30 italic text-blue-100 text-sm">
-            Conectando con la congregación...
-          </div>
-          <div className="p-6 bg-white/5 border-t border-white/5">
-            <input type="text" placeholder="Escribe tus bendiciones..." className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none" />
+            <button 
+              onClick={() => handleSaveAndRedirect()} // Función envuelta para corregir el error de tipos
+              disabled={loading || !youtubeId}
+              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <><Play size={18} fill="currentColor" /> Habilitar Señal</>
+              )}
+            </button>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

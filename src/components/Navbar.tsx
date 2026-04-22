@@ -13,9 +13,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from './AuthModal';
+import LiveConfigModal from './LiveIndicator'; // <-- Importado
 
 export default function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false); // <-- Estado para el Live
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -109,9 +111,9 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* BOTÓN EN VIVO */}
-            <Link
-              href="/live"
+            {/* BOTÓN EN VIVO (Ahora activa el Pop-up si es Admin o lleva a /live si es usuario) */}
+            <button
+              onClick={() => isAdmin ? setIsLiveModalOpen(true) : router.push('/live')}
               className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0"
             >
               <span className="relative flex h-2 w-2">
@@ -119,7 +121,7 @@ export default function Navbar() {
                 <span className="relative rounded-full h-2 w-2 bg-white"></span>
               </span>
               <span className="uppercase tracking-tighter">En Vivo</span>
-            </Link>
+            </button>
 
             {/* SECCIÓN DINÁMICA */}
             {user ? (
@@ -178,7 +180,6 @@ export default function Navbar() {
                 {/* Perfil Mini */}
                 <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-full pr-3 border border-slate-100 shrink-0">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs uppercase">
-                    {/* 👇 FIX: optional chaining para evitar crash si name es undefined */}
                     {user?.name?.charAt(0) ?? '?'}
                   </div>
                   <button
@@ -202,6 +203,11 @@ export default function Navbar() {
       </nav>
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      
+      {/* MODAL PARA CONFIGURAR EL EN VIVO */}
+      {isLiveModalOpen && (
+        <LiveConfigModal onClose={() => setIsLiveModalOpen(false)} />
+      )}
     </>
   );
 }

@@ -6,26 +6,95 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  // Fíjate en la parte después de .net/
+  url      = "mongodb://root:Aa8ge0050*@ac-w3xywdd-shard-00-00.j4mhfep.mongodb.net:27017,ac-w3xywdd-shard-00-01.j4mhfep.mongodb.net:27017,ac-w3xywdd-shard-00-02.j4mhfep.mongodb.net:27017/?ssl=true&replicaSet=atlas-ccomeh-shard-0&authSource=admin&appName=Cluster0"
+}
+
+model User {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String     @unique
+  image     String?
+  role      String     @default("user") // "admin" o "user"
+  status    String     @default("active") // "active" o "suspended"
+  createdAt DateTime   @default(now())
+
+  // Relaciones
+  comments  Comment[]
+  reactions Reaction[]
+
+  @@map("users")
 }
 
 model Category {
   id    String @id @default(auto()) @map("_id") @db.ObjectId
   name  String @unique
   blogs Blog[]
+
+  @@map("categories")
 }
 
-// fragmento de schema.prisma
 model Blog {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   title        String
-  description  String
   content      String
-  imageUrl     String
-  readingTime  String   @default("5 min")
+  description  String
+  imageUrl     String?
+  readingTime  String?
   videoUrl     String?
-  slug         String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relación con Categoría
   categoryId   String   @db.ObjectId
   category     Category @relation(fields: [categoryId], references: [id])
-  createdAt    DateTime @default(now())
+
+  // Relaciones con Actividad
+  comments     Comment[]
+  reactions    Reaction[]
+
+  @@map("blogs")
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relación con Blog
+  blogId    String   @db.ObjectId
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  // Relación con Usuario
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Reaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String   // "LIKE" o "DISLIKE"
+  createdAt DateTime @default(now())
+
+  // Relación con Blog
+  blogId    String   @db.ObjectId
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  // Relación con Usuario
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([blogId, userId]) // Un usuario solo puede reaccionar una vez por cada blog
+  @@map("reactions")
+}
+
+model LiveConfig {
+  id        String   @id @default("main-live") @map("_id")
+  isLive    Boolean  @default(false)
+  youtubeId String
+  title     String?
+  updatedAt DateTime @updatedAt
+
+  @@map("live_configs")
 }
