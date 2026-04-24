@@ -3,21 +3,21 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Radio,
   LogIn,
   LogOut,
   PlusCircle,
   LayoutDashboard,
   Tags,
-  MessageSquare
+  MessageSquare,
+  Video
 } from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from './AuthModal';
-import LiveConfigModal from './LiveIndicator'; // <-- Importado
+import LiveConfigModal from './LiveIndicator';
 
 export default function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false); // <-- Estado para el Live
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -57,6 +57,44 @@ export default function Navbar() {
     router.refresh();
   };
 
+  // Función para manejar el acceso al Live
+  // ... (dentro de tu componente Navbar)
+
+  const handleLiveAccess = async () => {
+    const savedUser = localStorage.getItem('user_data');
+    if (!savedUser) {
+      setIsAuthOpen(true);
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+
+    if (user.role === 'admin') {
+      setIsLiveModalOpen(true);
+    } else {
+      try {
+        // Intentamos obtener el ID de MongoDB
+        const response = await fetch('/api/admin/live');
+
+        if (!response.ok) {
+          throw new Error('No se encontró la ruta de la API');
+        }
+
+        const data = await response.json();
+
+        if (data && data.youtubeId) {
+          // Redirigimos usando el ID que viene de la base de datos
+          router.push(`/live/${data.youtubeId}`);
+        } else {
+          alert("No hay una transmisión activa configurada por el administrador.");
+        }
+      } catch (error) {
+        console.error("Error detallado:", error);
+        alert("Error de conexión: Asegúrate de que el archivo src/app/api/live/route.ts exista.");
+      }
+    }
+  };
+
   if (!mounted) {
     return <nav className="sticky top-0 z-50 bg-white border-b h-20" />;
   }
@@ -67,11 +105,9 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm transition-all duration-700">
         <div
-          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${
-            isAdmin ? 'max-w-[98%] 2xl:max-w-[1600px]' : 'max-w-7xl'
-          }`}
+          className={`mx-auto px-6 h-20 flex items-center justify-between transition-all duration-500 ease-in-out ${isAdmin ? 'max-w-[98%] 2xl:max-w-[1600px]' : 'max-w-7xl'
+            }`}
         >
-
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden">
@@ -90,7 +126,7 @@ export default function Navbar() {
           {/* CONTENEDOR DERECHO */}
           <div className="flex items-center justify-end gap-3 flex-1 ml-4">
 
-            {/* Menú Público */}
+            {/* Menú Público (Desktop) */}
             <div className="hidden lg:flex items-center gap-1">
               {[
                 { path: '/', label: 'Inicio' },
@@ -100,41 +136,41 @@ export default function Navbar() {
                 <Link
                   key={link.path}
                   href={link.path}
-                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
-                    pathname === link.path
-                      ? 'text-blue-600 bg-blue-50/50'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${pathname === link.path
+                    ? 'text-blue-600 bg-blue-50/50'
+                    : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   {link.label}
                 </Link>
               ))}
             </div>
 
-            {/* BOTÓN EN VIVO (Ahora activa el Pop-up si es Admin o lleva a /live si es usuario) */}
+            {/* BOTÓN EN VIVO DINÁMICO */}
             <button
-              onClick={() => isAdmin ? setIsLiveModalOpen(true) : router.push('/live')}
+              onClick={handleLiveAccess}
               className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg hover:bg-red-700 transition shrink-0"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute h-full w-full rounded-full bg-red-100 opacity-75"></span>
                 <span className="relative rounded-full h-2 w-2 bg-white"></span>
               </span>
-              <span className="uppercase tracking-tighter">En Vivo</span>
+              <span className="uppercase tracking-tighter">
+                {isAdmin ? 'Configurar Live' : 'En Vivo'}
+              </span>
             </button>
 
-            {/* SECCIÓN DINÁMICA */}
+            {/* SECCIÓN DE USUARIO / ADMIN */}
             {user ? (
               <div className="flex items-center gap-2 pl-4 border-l border-slate-100 animate-in fade-in slide-in-from-right-2">
                 <div className="hidden md:flex items-center gap-1">
 
                   <Link
                     href="/admin/dashboard"
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                      pathname === '/admin/dashboard'
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-slate-500 hover:bg-slate-50'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/dashboard'
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-slate-500 hover:bg-slate-50'
+                      }`}
                   >
                     <LayoutDashboard size={16} />
                     <span className="hidden xl:inline">Doctrinas</span>
@@ -144,11 +180,10 @@ export default function Navbar() {
                     <>
                       <Link
                         href="/admin/testimonios"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          pathname === '/admin/testimonios'
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-slate-500 hover:bg-slate-50'
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/testimonios'
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-slate-500 hover:bg-slate-50'
+                          }`}
                       >
                         <MessageSquare size={16} />
                         <span className="hidden xl:inline">Testimonios</span>
@@ -156,11 +191,10 @@ export default function Navbar() {
 
                       <Link
                         href="/admin/categorias"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          pathname === '/admin/categorias'
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-slate-500 hover:bg-slate-50'
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/admin/categorias'
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-slate-500 hover:bg-slate-50'
+                          }`}
                       >
                         <Tags size={16} />
                         <span className="hidden xl:inline">Categorías</span>
@@ -177,20 +211,22 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Perfil Mini */}
+                {/* Avatar y Logout */}
                 <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-full pr-3 border border-slate-100 shrink-0">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs uppercase shadow-sm">
                     {user?.name?.charAt(0) ?? '?'}
                   </div>
                   <button
                     onClick={handleLogout}
                     className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                    title="Cerrar Sesión"
                   >
                     <LogOut size={16} />
                   </button>
                 </div>
               </div>
             ) : (
+              /* Botón Login para visitantes */
               <button
                 onClick={() => setIsAuthOpen(true)}
                 className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-800 transition shrink-0 flex items-center gap-2"
@@ -202,9 +238,9 @@ export default function Navbar() {
         </div>
       </nav>
 
+      {/* MODALES */}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-      
-      {/* MODAL PARA CONFIGURAR EL EN VIVO */}
+
       {isLiveModalOpen && (
         <LiveConfigModal onClose={() => setIsLiveModalOpen(false)} />
       )}

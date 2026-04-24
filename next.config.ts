@@ -1,11 +1,8 @@
-// next.config.ts
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    formats: ['image/avif', 'image/webp'], // Formatos mucho más ligeros que PNG o JPG
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com', // O el host que uses para tus fotos
-      },
       {
         protocol: 'https',
         hostname: 'img.youtube.com',

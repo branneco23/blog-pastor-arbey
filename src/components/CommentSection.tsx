@@ -21,32 +21,29 @@ export default function CommentSection({ blogId, user }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!commentText.trim()) return;
+    if (!commentText.trim()) return; // Usamos commentText
 
     setIsSubmitting(true);
-    setMessage(null);
-
     try {
-      const response = await fetch(`/api/doctrinas/${blogId}/comments`, {
+      const response = await fetch(`/api/blog/${blogId}/comments`, { // Corregido 'respons' a 'response'
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: commentText,
-          userName: user.name // Enviamos el nombre del usuario logueado
-        }),
+        body: JSON.stringify({
+          content: commentText, // Debe ser commentText
+          authorId: user.id
+        })
       });
 
       if (response.ok) {
         setCommentText('');
-        setMessage({ type: 'success', text: '¡Amén! Tu comentario ha sido publicado.' });
-        // Opcional: Recargar la página o actualizar la lista de comentarios localmente
+        setMessage({ type: 'success', text: '¡Comentario publicado!' });
         setTimeout(() => window.location.reload(), 1500);
       } else {
-        throw new Error();
+        const errorData = await response.json();
+        setMessage({ type: 'error', text: errorData.error || 'Error al publicar' });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'No se pudo enviar el comentario. Intenta de nuevo.' });
+      setMessage({ type: 'error', text: 'Error de conexión' });
     } finally {
       setIsSubmitting(false);
     }
@@ -76,7 +73,7 @@ export default function CommentSection({ blogId, user }: Props) {
               {message.text}
             </span>
           )}
-          
+
           <button
             type="submit"
             disabled={isSubmitting || !commentText.trim()}
