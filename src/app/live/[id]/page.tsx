@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function LivePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: videoId } = use(params);
   const [loadStream, setLoadStream] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<{name: string} | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function LivePage({ params }: { params: Promise<{ id: string }> }
             Servicio en Directo
           </h1>
           <div className="text-[10px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold uppercase">
-             Conectado como: {user.name}
+             {user?.name ? `Conectado como: ${user.name}` : "Invitado"}
           </div>
         </header>
 

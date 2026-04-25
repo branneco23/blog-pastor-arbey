@@ -1,6 +1,6 @@
 import './globals.css';
 import Navbar from '@/components/Navbar';
-import {Footer} from '@/components/Footer';
+import { Footer } from '@/components/Footer';
 import { BlogProvider } from '@/context/BlogContext';
 // Asegúrate de importar el modal que vamos a usar globalmente si es necesario, 
 // pero según tu código de Navbar, el modal se maneja allá.

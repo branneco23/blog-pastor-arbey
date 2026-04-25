@@ -74,7 +74,7 @@ export default function Navbar() {
     } else {
       try {
         // Intentamos obtener el ID de MongoDB
-        const response = await fetch('/api/admin/live');
+        const response = await fetch('/api/live');
 
         if (!response.ok) {
           throw new Error('No se encontró la ruta de la API');
