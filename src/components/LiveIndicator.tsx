@@ -16,13 +16,16 @@ export default function LiveConfigModal({ onClose }: LiveConfigModalProps) {
     e.preventDefault();
     if (videoId.trim()) {
       const cleanId = videoId.trim();
-      
+
       try {
-        // Guardamos el ID en el servidor a través de la API
         await fetch('/api/live', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: cleanId }),
+          body: JSON.stringify({
+            youtubeId: cleanId,   // ← antes era 'id: cleanId'
+            isLive: true,          // ← esto faltaba
+            title: "Transmisión en Vivo"
+          }),
         });
 
         onClose();

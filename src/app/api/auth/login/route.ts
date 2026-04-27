@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { signToken } from "@/lib/jwt";
 import User from "@/models/User"; // Tu modelo de Mongoose
-import bcrypt from "bcryptjs"; // Para comparar la contraseña real con la encriptada
+import bcrypt from "bcryptjs"; 
 import connectDB from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     await connectDB(); // 1. Conectar a MongoDB
     const { email, password } = await req.json();
 
+    // 1. Validaciones de entrada
     if (!email || !password) {
       return NextResponse.json(
         { error: "Correo y contraseña son obligatorios" },
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // En src/app/api/auth/login/route.ts
-    const userFound = await User.findOne({ email }).select("+password");
+    // 2. Buscar usuario (incluyendo password y el campo estado para el bloqueo)
+    const userFound = await User.findOne({ email }).select("+password +estado");
 
     if (!userFound) {
       return NextResponse.json(
@@ -26,12 +27,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Verificar si la contraseña coincide
-    // Si tus contraseñas en la DB están encriptadas con bcrypt:
-    const isMatch = await bcrypt.compare(password, userFound.password);
+    // 3. VALIDACIÓN DE BLOQUEO (Crucial para el Panel de Usuarios)
+    // Comprobamos si el estado es 'bloqueado' o 'baneado' según definiste en el PUT
+    if (userFound.estado === "bloqueado" || userFound.estado === "baneado") {
+      return NextResponse.json(
+        { error: "Esta cuenta ha sido bloqueada por el administrador." }, 
+        { status: 403 } // Forbidden
+      );
+    }
 
-    // Si NO están encriptadas (solo para pruebas, no recomendado), usa:
-    // const isMatch = userFound.password === password;
+    // 4. Verificar si la contraseña coincide
+    const isMatch = await bcrypt.compare(password, userFound.password);
 
     if (!isMatch) {
       return NextResponse.json(
@@ -40,30 +46,32 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Preparar datos del usuario desde la DB
+    // 5. Preparar datos del usuario para el Token y el Frontend
     const userPayload = {
-      id: userFound._id,
+      id: userFound._id.toString(), // Convertimos el ObjectId a string
       name: userFound.name,
-      role: userFound.role, // Aquí tomará el 'admin' o 'user' real de MongoDB
+      role: userFound.role, 
       email: userFound.email,
     };
 
     const token = await signToken(userPayload);
 
-    // 5. Enviar respuesta con los datos reales
+    // 6. Configurar respuesta con datos de usuario y Cookie de sesión
     const response = NextResponse.json({
       success: true,
-      user: userPayload, // Enviamos el objeto 'user' completo para que el AuthModal lo guarde
+      user: userPayload, 
     });
 
     response.cookies.set("token", token, {
-      httpOnly: true,
+      httpOnly: true, // Seguridad: no accesible desde JS del navegador
       path: "/",
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production", // true en producción
+      maxAge: 60 * 60 * 24 * 7, // 7 días de duración
+      secure: process.env.NODE_ENV === "production",
     });
 
     return response;
+
   } catch (error) {
     console.error("Error en login:", error);
     return NextResponse.json(

@@ -1,72 +1,72 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-interface UserAdmin {
-  _id: string;
-  nombre: string;
-  email: string;
-  rol: string;
-  reacciones: any[]; // Aquí vendrán los likes/corazones
-}
+import { Trash2, ShieldAlert, ShieldCheck, MessageSquare, UserX, Loader2 } from 'lucide-react';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<UserAdmin[]>([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch('/api/admin/users')
-      .then(res => res.json())
-      .then(data => {
-        setUsers(data);
-        setLoading(false);
-      });
-  }, []);
+  const loadUsers = async () => {
+    const res = await fetch('/api/admin/users');
+    const data = await res.json();
+    setUsers(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadUsers(); }, []);
+
+  const handleAction = async (userId: string, action: string) => {
+    const confirmMsg = action === 'delete' ? '¿Eliminar usuario permanentemente?' : '¿Cambiar estado de bloqueo?';
+    if (!confirm(confirmMsg)) return;
+
+    await fetch('/api/admin/users', {
+      method: 'PATCH',
+      body: JSON.stringify({ userId, action })
+    });
+    loadUsers();
+  };
+
+  if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline" /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4">
-      <h2 className="text-3xl font-black text-slate-900 mb-8 uppercase tracking-tight">
-        Gestión de Miembros
-      </h2>
-
-      <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
+    <div className="p-8 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Panel de Control de Usuarios</h1>
+      
+      <div className="bg-white rounded-[30px] shadow-sm border border-slate-200 overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-100">
+          <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase">Usuario</th>
-              <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase">Rol</th>
-              <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase">Actividad (Reacciones)</th>
+              <th className="p-5 font-bold">Usuario</th>
+              <th className="p-5 font-bold text-center">Comentarios</th>
+              <th className="p-5 font-bold text-center">Estado</th>
+              <th className="p-5 font-bold text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            {users.map((user) => (
-              <tr key={user._id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-8 py-6">
-                  <p className="font-bold text-slate-900">{user.nombre}</p>
-                  <p className="text-sm text-slate-400">{user.email}</p>
+          <tbody>
+            {users.map((user: any) => (
+              <tr key={user.id} className="border-b last:border-0 hover:bg-slate-50/50">
+                <td className="p-5">
+                  <div className="font-bold">{user.name}</div>
+                  <div className="text-xs text-slate-500">{user.email}</div>
                 </td>
-                <td className="px-8 py-6">
-                  <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${
-                    user.rol === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {user.rol}
+                <td className="p-5 text-center">
+                  <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                    <MessageSquare size={14} /> {user._count.comments}
                   </span>
                 </td>
-                <td className="px-8 py-6">
-                  {user.reacciones.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {user.reacciones.map((reac, idx) => (
-                        <span key={idx} title={reac.blogId?.title} className="text-lg">
-                          {reac.tipo === 'like' ? '👍' : '❤️'}
-                        </span>
-                      ))}
-                      <span className="text-xs text-slate-400 self-center ml-1">
-                        ({user.reacciones.length})
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-300 italic">Sin actividad</span>
-                  )}
+                <td className="p-5 text-center">
+                  {user.isBlocked ? 
+                    <span className="text-red-500 text-xs font-black uppercase">Bloqueado</span> : 
+                    <span className="text-green-500 text-xs font-black uppercase">Activo</span>
+                  }
+                </td>
+                <td className="p-5 text-right space-x-2">
+                  <button onClick={() => handleAction(user.id, 'toggleBlock')} className="p-2 hover:bg-slate-100 rounded-lg">
+                    {user.isBlocked ? <ShieldCheck className="text-green-600" /> : <ShieldAlert className="text-amber-600" />}
+                  </button>
+                  <button onClick={() => handleAction(user.id, 'delete')} className="p-2 hover:bg-red-50 rounded-lg text-red-500">
+                    <Trash2 />
+                  </button>
                 </td>
               </tr>
             ))}

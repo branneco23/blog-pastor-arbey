@@ -8,42 +8,64 @@ export default function AdminLivePage() {
 
   // 1. Cargar los datos actuales al entrar
   useEffect(() => {
-    fetch('/api/live') // Consultamos la ruta pública
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.youtubeId !== undefined) {
+    const loadLiveConfig = async () => {
+      try {
+        // Forzamos que no use caché para ver siempre lo real de la BD
+        const res = await fetch('/api/live', { cache: 'no-store' });
+        const data = await res.json();
+
+        // Si la API responde con datos, actualizamos el estado
+        if (data && !data.error) {
           setLiveData({
-            isLive: data.isLive || false,
+            isLive: data.isLive ?? false,
             youtubeId: data.youtubeId || '',
             title: data.title || ''
           });
         }
-      })
-      .catch(err => console.error("Error al cargar datos:", err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("Error al cargar datos desde MongoDB:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLiveConfig();
   }, []);
 
   // 2. Guardar los datos (POST)
   const handleSave = async () => {
+    // Validación de seguridad para no romper el reproductor
     if (liveData.isLive && !liveData.youtubeId) {
-      alert("Si activas el vivo, debes poner un ID de YouTube");
+      alert("Atención: Para activar la señal 'En Vivo' es obligatorio ingresar el ID de YouTube.");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/live', { // CAMBIO: Usamos la ruta corregida
+      // Enviamos a la ruta corregida /api/live
+      const response = await fetch('/api/live', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(liveData),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        // Aseguramos que los tipos coincidan con Prisma
+        body: JSON.stringify({
+          isLive: Boolean(liveData.isLive),
+          youtubeId: liveData.youtubeId.trim(),
+          title: liveData.title || "Transmisión en Vivo"
+        }),
       });
 
-      if (!response.ok) throw new Error("Error en el servidor");
+      const result = await response.json();
 
-      alert("¡Base de Datos actualizada con éxito!");
+      if (!response.ok) {
+        throw new Error(result.error || "Error al actualizar la base de datos");
+      }
+
+      alert("¡Configuración guardada! Ahora aparecerá en la colección LiveConfig de MongoDB.");
     } catch (error) {
-      console.error(error);
-      alert("Error al guardar. Revisa la conexión con MongoDB.");
+      console.error("Error detallado:", error);
+      alert("No se pudo guardar la configuración. Verifica que tu IP esté habilitada en MongoDB Atlas.");
     } finally {
       setLoading(false);
     }
@@ -85,15 +107,15 @@ export default function AdminLivePage() {
               className="w-full p-5 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800"
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-2">ID del Video de YouTube</label>
             <input
+              placeholder='Ej. QP5dIQn-WBA'
               type="text"
-              placeholder="Ej: QP5dlQn-WBA"
               value={liveData.youtubeId}
-              onChange={(e) => setLiveData({ ...liveData, youtubeId: e.target.value })}
-              className="w-full p-5 rounded-2xl border border-slate-200 font-mono outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800"
+              onChange={(e) => setLiveData(prev => ({ ...prev, youtubeId: e.target.value }))}
+              className="..."
             />
             <p className="text-[10px] text-slate-400 ml-2">Es el código que sale después de v= en el link de YouTube</p>
           </div>

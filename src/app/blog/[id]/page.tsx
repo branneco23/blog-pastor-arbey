@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, Clock, Calendar, PlayCircle, X, 
-  ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, MessageSquare, Send 
+import {
+  ArrowLeft, Clock, Calendar, PlayCircle, X,
+  ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, MessageSquare, Send
 } from 'lucide-react';
 
 interface Blog {
@@ -27,7 +27,7 @@ export default function BlogDetailPage() {
   const router = useRouter();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Estados para Reacciones y Comentarios
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
@@ -46,7 +46,7 @@ export default function BlogDetailPage() {
         if (!res.ok) throw new Error();
         const data = await res.json();
         setBlog(data);
-        
+
         // Cargar reacciones y comentarios (Asumiendo que vienen en el GET del blog o fetch aparte)
         // Por ahora inicializamos con lo que venga del conteo
         setComments(data.comments || []);
@@ -79,20 +79,38 @@ export default function BlogDetailPage() {
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
+
+    // OBTENER USUARIO REAL
+    const savedUser = localStorage.getItem('user_data');
+    if (!savedUser) {
+      alert("Debes iniciar sesión para comentar");
+      return;
+    }
+    const user = JSON.parse(savedUser);
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/blogs/${id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment, userId: "USER_ID_TEMPORAL" })
+        body: JSON.stringify({
+          content: newComment,
+          userId: user.id // <--- USAR ID REAL
+        })
       });
+
       if (res.ok) {
-        const comment = await res.json();
-        setComments([comment, ...comments]);
+        const savedComment = await res.json();
+        // Agregamos el nombre del usuario manualmente para que se vea de inmediato
+        const commentWithUser = {
+          ...savedComment,
+          user: { name: user.name }
+        };
+        setComments([commentWithUser, ...comments]);
         setNewComment("");
       }
     } catch (error) {
-      console.error("Error al comentar:", error);
+      console.error("Error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -177,18 +195,18 @@ export default function BlogDetailPage() {
 
         {/* REACCIONES RAPIDAS */}
         <div className="flex items-center gap-4 mb-10 py-6 border-y border-slate-50">
-           <button 
+          <button
             onClick={() => handleReaction('LIKE')}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all active:scale-95"
-           >
-             <ThumbsUp size={16} /> Me gusta
-           </button>
-           <button 
+          >
+            <ThumbsUp size={16} /> Me gusta
+          </button>
+          <button
             onClick={() => handleReaction('DISLIKE')}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all active:scale-95"
-           >
-             <ThumbsDown size={16} /> No me gusta
-           </button>
+          >
+            <ThumbsDown size={16} /> No me gusta
+          </button>
         </div>
 
         {/* CONTENIDO TEXTUAL */}
@@ -221,7 +239,7 @@ export default function BlogDetailPage() {
               placeholder="Escribe una reflexión o pregunta..."
               className="w-full bg-slate-50 rounded-[24px] p-6 text-slate-700 border-none focus:ring-2 focus:ring-blue-100 min-h-[120px] outline-none transition-all resize-none"
             />
-            <button 
+            <button
               disabled={isSubmitting}
               className="absolute bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
             >

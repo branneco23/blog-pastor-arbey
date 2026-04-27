@@ -1,41 +1,50 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
-import Reaccion from "@/models/Reaccion"; // Modelo de reacciones
+import Reaccion from "@/models/Reaccion"; 
+import Comment from "@/models/Comment"; // Asegúrate de que el modelo se llame Comment
+import Testimonio from "@/models/Testimonio"; 
 import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 
-// OBTENER TODOS LOS USUARIOS CON SUS REACCIONES
+// Función auxiliar para verificar si es Admin
+async function isAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) return null;
+  const payload = await verifyToken(token);
+  return payload && payload.role === "admin" ? payload : null;
+}
+
+// OBTENER TODOS LOS USUARIOS CON ACTIVIDAD COMPLETA
 export async function GET() {
   try {
     await connectDB();
 
-    // 1. Validación de Seguridad (Solo Admin)
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const payload = token ? await verifyToken(token) : null;
-
-    if (!payload || payload.role !== "admin") {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // 2. Obtener usuarios básicos (sin password)
     const users = await User.find({})
-      .lean()
       .select("-password")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // 3. Unir con sus reacciones (Activity Mapping)
+    // Mapeamos cada usuario para traer su actividad de diferentes colecciones
     const usersWithActivity = await Promise.all(
       users.map(async (user: any) => {
-        // Buscamos todas las reacciones de este usuario específico
-        const reacciones = await Reaccion.find({ userId: user._id })
-          .populate("blogId", "title") // Opcional: trae el título del blog reaccionado
-          .lean();
+        const [reacciones, comentarios, testimonios] = await Promise.all([
+          Reaccion.find({ userId: user._id }).populate("blogId", "title").lean(),
+          Comment.find({ userId: user._id }).populate("blogId", "title").lean(),
+          Testimonio.find({ userId: user._id }).lean()
+        ]);
 
         return {
           ...user,
-          reacciones, // Esto es lo que leerá tu tabla
+          reacciones,
+          comentarios,
+          testimonios,
+          totalActividad: reacciones.length + comentarios.length + testimonios.length
         };
       })
     );
@@ -47,28 +56,27 @@ export async function GET() {
   }
 }
 
-// ACTUALIZAR ESTADO (Activar/Bannear)
+// ACTUALIZAR ESTADO (Bloquear/Activar)
 export async function PUT(req: Request) {
   try {
     await connectDB();
     
-    // Verificación de Admin (Seguridad)
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const payload = token ? await verifyToken(token) : null;
-    if (!payload || payload.role !== "admin") {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { userId, updateData } = await req.json();
+    const { userId, nuevoEstado } = await req.json();
 
-    // Actualizamos solo el campo 'estado' (o status según tu modelo)
-    // Usamos el nombre de campo 'estado' que es el que definimos en tu User.ts
+    if (!userId || !nuevoEstado) {
+      return NextResponse.json({ error: "Datos insuficientes" }, { status: 400 });
+    }
+
+    // Actualizamos el campo 'estado' (activo/baneado)
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { estado: updateData.status }, 
+      { estado: nuevoEstado }, 
       { new: true }
-    );
+    ).select("-password");
 
     if (!updatedUser) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -76,20 +84,16 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+    return NextResponse.json({ error: "Error al actualizar usuario" }, { status: 500 });
   }
 }
 
-// ELIMINAR USUARIO
+// ELIMINAR USUARIO Y TODA SU ACTIVIDAD
 export async function DELETE(request: Request) {
   try {
     await connectDB();
 
-    // Verificación de Admin (Seguridad)
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const payload = token ? await verifyToken(token) : null;
-    if (!payload || payload.role !== "admin") {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -99,13 +103,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID de usuario requerido" }, { status: 400 });
     }
 
+    // 1. Eliminar al usuario
     await User.findByIdAndDelete(userId);
     
-    // Opcional: Borrar también sus reacciones para limpiar la DB
-    await Reaccion.deleteMany({ userId });
+    // 2. Limpieza total de su actividad (Integridad de la DB)
+    await Promise.all([
+      Reaccion.deleteMany({ userId }),
+      Comment.deleteMany({ userId }),
+      Testimonio.deleteMany({ userId })
+    ]);
 
-    return NextResponse.json({ message: "Usuario y actividad eliminados" });
+    return NextResponse.json({ message: "Usuario y toda su actividad eliminados permanentemente" });
   } catch (error) {
+    console.error("Error al eliminar:", error);
     return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
   }
 }

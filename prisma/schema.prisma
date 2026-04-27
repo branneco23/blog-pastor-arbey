@@ -15,7 +15,7 @@ model User {
   email     String     @unique
   image     String?
   role      String     @default("user") // "admin" o "user"
-  status    String     @default("active") // "active" o "suspended"
+  isBlocked Boolean    @default(false)
   createdAt DateTime   @default(now())
 
   // Relaciones
@@ -85,9 +85,11 @@ model Reaction {
 }
 
 model LiveConfig {
-  id        String   @id @map("_id") // Importante para MongoDB
+  id        String   @id @map("_id")
   isLive    Boolean  @default(false)
   youtubeId String
-  title     String?
+  title     String   @default("Transmisión en Vivo")
   updatedAt DateTime @updatedAt
+
+  @@map("live_configs") // Esto fuerza a Prisma a usar la tabla que ya tienes en Compass
 }
