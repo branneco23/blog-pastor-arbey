@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
-import Reaccion from "@/models/Reaccion"; 
-import Comment from "@/models/Comment"; // Asegúrate de que el modelo se llame Comment
-import Testimonio from "@/models/Testimonio"; 
+import Reaccion from "@/models/Reaccion";
+import Comment from "@/models/Comment";
+import Testimonio from "@/models/Testimonio";
 import { verifyToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 
@@ -16,75 +16,77 @@ async function isAdmin() {
   return payload && payload.role === "admin" ? payload : null;
 }
 
-// OBTENER TODOS LOS USUARIOS CON ACTIVIDAD COMPLETA
 export async function GET() {
   try {
     await connectDB();
-
-    if (!(await isAdmin())) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const users = await User.find({})
+    const users = await User.find({ role: { $ne: "admin" } })
       .select("-password")
-      .sort({ createdAt: -1 })
       .lean();
 
-    // Mapeamos cada usuario para traer su actividad de diferentes colecciones
-    const usersWithActivity = await Promise.all(
+    const dataFull = await Promise.all(
       users.map(async (user: any) => {
-        const [reacciones, comentarios, testimonios] = await Promise.all([
-          Reaccion.find({ userId: user._id }).populate("blogId", "title").lean(),
+        const [comentarios, reacciones] = await Promise.all([
           Comment.find({ userId: user._id }).populate("blogId", "title").lean(),
-          Testimonio.find({ userId: user._id }).lean()
+          Reaccion.find({ userId: user._id }).populate("blogId", "title").lean(),
         ]);
 
         return {
           ...user,
-          reacciones,
-          comentarios,
-          testimonios,
-          totalActividad: reacciones.length + comentarios.length + testimonios.length
+          actividad: {
+            comentarios,
+            reacciones,
+            total: comentarios.length + reacciones.length,
+          },
         };
-      })
+      }),
     );
 
-    return NextResponse.json(usersWithActivity);
+    return NextResponse.json(dataFull);
   } catch (error) {
-    console.error("Error en GET Users:", error);
-    return NextResponse.json({ error: "Error de servidor" }, { status: 500 });
+    return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });
   }
 }
 
-// ACTUALIZAR ESTADO (Bloquear/Activar)
+// ACTUALIZAR ESTADO (Bloquear/Activar) - CORREGIDO
 export async function PUT(req: Request) {
   try {
     await connectDB();
-    
+
     if (!(await isAdmin())) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { userId, nuevoEstado } = await req.json();
+    // Cambiamos 'nuevoEstado' por 'isBlocked' para que coincida con tu Frontend y DB
+    const { userId, isBlocked } = await req.json();
 
-    if (!userId || !nuevoEstado) {
-      return NextResponse.json({ error: "Datos insuficientes" }, { status: 400 });
+    if (!userId || typeof isBlocked === 'undefined') {
+      return NextResponse.json(
+        { error: "Datos insuficientes (userId e isBlocked son requeridos)" },
+        { status: 400 },
+      );
     }
 
-    // Actualizamos el campo 'estado' (activo/baneado)
+    // Actualizamos el campo 'isBlocked' que es el que usa tu base de datos
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { estado: nuevoEstado }, 
-      { new: true }
+      { isBlocked: isBlocked }, 
+      { new: true },
     ).select("-password");
 
     if (!updatedUser) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Usuario no encontrado" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error: any) {
-    return NextResponse.json({ error: "Error al actualizar usuario" }, { status: 500 });
+    console.error("Error en PUT User:", error);
+    return NextResponse.json(
+      { error: "Error al actualizar usuario" },
+      { status: 500 },
+    );
   }
 }
 
@@ -98,22 +100,25 @@ export async function DELETE(request: Request) {
     }
 
     const { userId } = await request.json();
-    
+
     if (!userId) {
-      return NextResponse.json({ error: "ID de usuario requerido" }, { status: 400 });
+      return NextResponse.json(
+        { error: "ID de usuario requerido" },
+        { status: 400 },
+      );
     }
 
-    // 1. Eliminar al usuario
     await User.findByIdAndDelete(userId);
-    
-    // 2. Limpieza total de su actividad (Integridad de la DB)
+
     await Promise.all([
       Reaccion.deleteMany({ userId }),
       Comment.deleteMany({ userId }),
-      Testimonio.deleteMany({ userId })
+      Testimonio.deleteMany({ userId }),
     ]);
 
-    return NextResponse.json({ message: "Usuario y toda su actividad eliminados permanentemente" });
+    return NextResponse.json({
+      message: "Usuario y toda su actividad eliminados permanentemente",
+    });
   } catch (error) {
     console.error("Error al eliminar:", error);
     return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });

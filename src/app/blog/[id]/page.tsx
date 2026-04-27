@@ -218,8 +218,14 @@ export default function BlogDetailPage() {
           </div>
 
           <div
-            className="text-slate-700 text-lg leading-relaxed whitespace-pre-wrap break-normal text-left mb-20"
-            style={{ wordBreak: 'normal', overflowWrap: 'break-word' }}
+            className="prose prose-slate prose-lg max-w-none mb-20
+              prose-headings:font-black prose-headings:tracking-tight
+              prose-strong:text-slate-900
+              prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+              prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:rounded-xl prose-blockquote:py-1
+              prose-ul:list-disc prose-ol:list-decimal
+              prose-li:text-slate-700
+              prose-p:text-slate-700"
             dangerouslySetInnerHTML={{ __html: blog.content }}
           />
         </div>
