@@ -141,7 +141,7 @@ export default function BlogDetailPage() {
       <article className="max-w-4xl mx-auto py-10 md:py-16 px-4">
 
         <button onClick={() => router.back()} className="mb-10 flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] group transition-all hover:text-blue-600">
-          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Regresar
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver Atrás
         </button>
 
         <header className="mb-12">
@@ -151,7 +151,7 @@ export default function BlogDetailPage() {
           <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight mb-8 tracking-tight">{blog.title}</h1>
           <div className="flex gap-5 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
             <span className="flex items-center gap-2"><Calendar size={14} /> {new Date(blog.createdAt).toLocaleDateString()}</span>
-            <span className="flex items-center gap-2"><Clock size={14} /> {blog.readingTime}</span>
+            <span className="flex items-center gap-2"><Clock size={14} /> {blog.readingTime}min</span>
           </div>
         </header>
 
@@ -193,6 +193,24 @@ export default function BlogDetailPage() {
           })}
         </div>
 
+        {/* CONTENIDO TEXTUAL DINÁMICO */}
+        <div className="max-w-none mt-10">
+          <div className="text-[10px] font-black text-blue-600/40 uppercase tracking-[0.4em] mb-10 flex items-center gap-4">
+            <span className="h-[1px] flex-1 bg-slate-100"></span>
+            Estudio Bíblico
+            <span className="h-[1px] flex-1 bg-slate-100"></span>
+          </div>
+
+          <div
+            className="prose prose-slate prose-lg max-w-3xl mx-auto mb-20
+    prose-headings:font-black prose-headings:tracking-tight
+    prose-p:text-slate-700 prose-p:leading-relaxed
+    prose-strong:text-slate-900
+    prose-img:rounded-[30px] prose-img:mx-auto"
+            dangerouslySetInnerHTML={{ __html: blog.content }}
+          />
+        </div>
+
         {/* REACCIONES RAPIDAS */}
         <div className="flex items-center gap-4 mb-10 py-6 border-y border-slate-50">
           <button
@@ -207,27 +225,6 @@ export default function BlogDetailPage() {
           >
             <ThumbsDown size={16} /> No me gusta
           </button>
-        </div>
-
-        {/* CONTENIDO TEXTUAL */}
-        <div className="max-w-none mt-10">
-          <div className="text-[10px] font-black text-blue-600/40 uppercase tracking-[0.4em] mb-10 flex items-center gap-4">
-            <span className="h-[1px] flex-1 bg-slate-100"></span>
-            Estudio Bíblico
-            <span className="h-[1px] flex-1 bg-slate-100"></span>
-          </div>
-
-          <div
-            className="prose prose-slate prose-lg max-w-none mb-20
-              prose-headings:font-black prose-headings:tracking-tight
-              prose-strong:text-slate-900
-              prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-              prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:rounded-xl prose-blockquote:py-1
-              prose-ul:list-disc prose-ol:list-decimal
-              prose-li:text-slate-700
-              prose-p:text-slate-700"
-            dangerouslySetInnerHTML={{ __html: blog.content }}
-          />
         </div>
 
         {/* SECCIÓN DE COMENTARIOS */}
