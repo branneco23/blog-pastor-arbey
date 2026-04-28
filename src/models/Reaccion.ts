@@ -1,12 +1,12 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import mongoose from 'mongoose';
 
-const ReaccionSchema = new Schema({
+const ReaccionSchema = new mongoose.Schema({
+  blogId: { type: mongoose.Schema.Types.ObjectId, ref: 'Blog', required: true },
+  userId: { type: String, required: true }, // ID del usuario (de localStorage o Auth)
   type: { type: String, enum: ['LIKE', 'DISLIKE'], required: true },
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  blogId: { type: Schema.Types.ObjectId, ref: "Blog", required: true }
 }, { timestamps: true });
 
-// Evita que un usuario reaccione dos veces al mismo blog
-ReaccionSchema.index({ userId: 1, blogId: 1 }, { unique: true });
+// Evita que un usuario reaccione varias veces al mismo blog (índice único)
+ReaccionSchema.index({ blogId: 1, userId: 1 }, { unique: true });
 
-export default models.Reaccion || model("Reaccion", ReaccionSchema);
+export default mongoose.models.Reaccion || mongoose.model('Reaccion', ReaccionSchema);

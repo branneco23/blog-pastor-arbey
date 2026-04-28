@@ -1,35 +1,57 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/db";
+import Reaccion from "@/models/Reaccion";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+// Agregamos Promise<{ id: string }> al tipo de params
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId, type } = await req.json(); // type: "LIKE" o "DISLIKE"
-    const blogId = params.id;
+    await connectDB();
+    
+    // LA CORRECCIÓN: Unwrapping params con await
+    const resolvedParams = await params;
+    const blogId = resolvedParams.id;
 
-    // Verificar si ya existe una reacción
-    const existing = await prisma.reaction.findUnique({
-      where: { blogId_userId: { blogId, userId } }
-    });
+    const likes = await Reaccion.countDocuments({ blogId, type: 'LIKE' });
+    const dislikes = await Reaccion.countDocuments({ blogId, type: 'DISLIKE' });
+
+    return NextResponse.json({ likes, dislikes });
+  } catch (error) {
+    return NextResponse.json({ error: "Error al obtener reacciones" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await connectDB();
+    
+    // LA CORRECCIÓN: Unwrapping params con await
+    const resolvedParams = await params;
+    const blogId = resolvedParams.id;
+
+    const { type, userId } = await req.json();
+
+    if (!userId || !type) {
+      return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
+    }
+
+    const existing = await Reaccion.findOne({ blogId, userId });
 
     if (existing) {
       if (existing.type === type) {
-        await prisma.reaction.delete({ where: { id: existing.id } });
-        return NextResponse.json({ message: "Eliminada" });
+        await Reaccion.findByIdAndDelete(existing._id);
       } else {
-        await prisma.reaction.update({
-          where: { id: existing.id },
-          data: { type }
-        });
-        return NextResponse.json({ message: "Actualizada" });
+        existing.type = type;
+        await existing.save();
       }
+    } else {
+      await Reaccion.create({ blogId, userId, type });
     }
 
-    const newReaction = await prisma.reaction.create({
-      data: { type, blogId, userId }
-    });
+    const likes = await Reaccion.countDocuments({ blogId, type: 'LIKE' });
+    const dislikes = await Reaccion.countDocuments({ blogId, type: 'DISLIKE' });
 
-    return NextResponse.json(newReaction);
+    return NextResponse.json({ likes, dislikes });
   } catch (error) {
-    return NextResponse.json({ error: "Error en reacción" }, { status: 500 });
+    return NextResponse.json({ error: "Error al procesar reacción" }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // 👈 Importamos Link
+import Link from 'next/link';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,11 +15,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
+  // Función para resetear el formulario
+  const resetForm = () => {
+    setFormData({ name: '', email: '', password: '' });
+  };
+
+  // Efecto para manejar el scroll y limpiar al cerrar
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+      resetForm(); // 👈 Limpia los campos cuando se cierra el modal
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
@@ -46,17 +53,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const userObj = data.user || data;
 
         const userToSave = {
+          _id: userObj._id || userObj.id,
           name: userObj.name,
           role: userObj.role || 'user',
           email: userObj.email
         };
 
-        localStorage.removeItem('user_data');
         localStorage.setItem('user_data', JSON.stringify(userToSave));
-
         window.dispatchEvent(new Event('user-login'));
+        
         onClose();
-
         router.push(userToSave.role === 'admin' ? '/admin/crear-blog' : '/');
         setTimeout(() => router.refresh(), 100);
       } else {
@@ -71,11 +77,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
-    setFormData({ name: '', email: '', password: '' });
+    resetForm(); // 👈 Limpia los campos al cambiar entre login y registro
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative border border-white/20 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -97,14 +103,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {!isLogin && (
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
+                  name="fullname"
                   placeholder="Nombre completo"
                   required
+                  autoComplete="new-name"
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -116,8 +124,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="email"
+                name="email"
                 placeholder="correo@ejemplo.com"
                 required
+                autoComplete="email"
                 className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -128,15 +138,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="password"
+                name="password"
                 placeholder="Tu contraseña"
                 required
+                autoComplete={isLogin ? "current-password" : "new-password"}
                 className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-900"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
 
-            {/* ENLACE DE RESTABLECIMIENTO */}
             {isLogin && (
               <div className="flex justify-end px-2">
                 <Link
