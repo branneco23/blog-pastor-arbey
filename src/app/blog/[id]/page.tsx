@@ -80,6 +80,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       const user = JSON.parse(savedUser);
+      // Corrección del ID para evitar el error "Usuario sin ID"
       const userId = user._id || user.id;
 
       if (!userId) return alert("Error de sesión: ID no encontrado. Por favor, re-inicia sesión.");
@@ -124,14 +125,13 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
         body: JSON.stringify({
           content: newComment.trim(),
           userId: userId,
-          blogId: id // Requerido por el modelo
+          blogId: id 
         })
       });
 
       if (res.ok) {
         const savedComment = await res.json();
 
-        // Normalizamos la estructura para que coincida con lo que devuelve el GET (userId como objeto)
         const commentWithUser = {
           ...savedComment,
           userId: { _id: userId, name: user.name || "Usuario" }
@@ -226,10 +226,12 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
           })}
         </div>
 
-        {/* CONTENIDO TEXTUAL */}
+        {/* CONTENIDO TEXTUAL FORMATEADO */}
+        {/* Se usa prose de Tailwind para interpretar el HTML de React Quill y mantener saltos de línea */}
         <div className="max-w-none">
           <div
-            className="prose prose-slate prose-lg max-w-3xl mx-auto mb-20 text-pretty leading-relaxed text-slate-700"
+            className="prose prose-slate prose-blue prose-lg max-w-none mx-auto mb-20 text-pretty leading-relaxed text-slate-700 
+                       prose-p:mb-6 prose-headings:font-bold prose-li:mb-2"
             dangerouslySetInnerHTML={{ __html: blog.content }}
           />
         </div>

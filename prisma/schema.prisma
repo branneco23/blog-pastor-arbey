@@ -93,3 +93,19 @@ model LiveConfig {
 
   @@map("live_configs") // Esto fuerza a Prisma a usar la tabla que ya tienes en Compass
 }
+
+model Forum {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  texto       String
+  usuarioName String
+  usuarioRole String       @default("user")
+  // Estado para gestión del administrador
+  estado      String       @default("pendiente") // pendiente, aceptado, rechazado
+  
+  // Lógica de hilos (Blackboard)
+  parentId    String?      @db.ObjectId
+  parent      Forum?  @relation("Respuestas", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  respuestas  Forum[] @relation("Respuestas")
+  
+  createdAt   DateTime     @default(now())
+}

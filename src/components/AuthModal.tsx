@@ -61,7 +61,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         localStorage.setItem('user_data', JSON.stringify(userToSave));
         window.dispatchEvent(new Event('user-login'));
-        
+
         onClose();
         router.push(userToSave.role === 'admin' ? '/admin/crear-blog' : '/');
         setTimeout(() => router.refresh(), 100);

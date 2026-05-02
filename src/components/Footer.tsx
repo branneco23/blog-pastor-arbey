@@ -1,5 +1,5 @@
 import { Mail, MapPin, ExternalLink, ChevronRight } from "lucide-react";
-import Image from 'next/image';
+import Link from 'next/link'; // Importamos Link de Next.js
 
 export function Footer() {
   return (
@@ -26,17 +26,35 @@ export function Footer() {
           <div className="md:col-span-3 lg:col-span-3">
             <h3 className="font-bold text-white text-sm uppercase tracking-[0.2em] mb-6">Enlaces Rápidos</h3>
             <ul className="space-y-4">
-              {['Inicio', 'Sobre Mí'].map((item) => (
-                <li key={item}>
-                  <a 
-                    href={item === 'Inicio' ? '/' : '/acerca'} 
-                    className="flex items-center gap-2 text-sm hover:text-blue-400 hover:translate-x-1 transition-all duration-300"
-                  >
-                    <ChevronRight className="w-3 h-3 text-blue-500" />
-                    {item}
-                  </a>
-                </li>
-              ))}
+              {/* Enlaces internos con componente Link */}
+              <li>
+                <Link 
+                  href="/" 
+                  className="flex items-center gap-2 text-sm hover:text-blue-400 hover:translate-x-1 transition-all duration-300"
+                >
+                  <ChevronRight className="w-3 h-3 text-blue-500" />
+                  Inicio
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/about" 
+                  className="flex items-center gap-2 text-sm hover:text-blue-400 hover:translate-x-1 transition-all duration-300"
+                >
+                  <ChevronRight className="w-3 h-3 text-blue-500" />
+                  Sobre Mí
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/testimonios" 
+                  className="flex items-center gap-2 text-sm hover:text-blue-400 hover:translate-x-1 transition-all duration-300"
+                >
+                  <ChevronRight className="w-3 h-3 text-blue-500" />
+                  Testimonios
+                </Link>
+              </li>
+              {/* Enlace externo se mantiene con <a> */}
               <li>
                 <a 
                   href="https://ipuc.org.co" 

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { X, UploadCloud, ArrowLeft, GripVertical } from 'lucide-react'; 
 import 'react-quill-new/dist/quill.snow.css';
 
+// Importación dinámica para evitar errores de SSR en Next.js
 const ReactQuill = dynamic(() => import('react-quill-new'), {
   ssr: false,
   loading: () => <div className="h-64 bg-slate-50 animate-pulse rounded-2xl border border-slate-200" />
@@ -19,7 +20,7 @@ interface Category {
 interface ImageItem {
   id: string;
   src: string;
-  file?: File; // Opcional porque si es edición, ya viene como URL
+  file?: File;
 }
 
 export default function AdminBlogForm() {
@@ -57,7 +58,6 @@ export default function AdminBlogForm() {
     fetchCats();
   }, []);
 
-  // Limpieza de memoria para las URLs creadas
   useEffect(() => {
     return () => {
       images.forEach(img => {
@@ -92,7 +92,7 @@ export default function AdminBlogForm() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // DRAG & DROP
+  // DRAG & DROP LOGIC
   const onDragStart = (index: number) => setDraggedIndex(index);
   const onDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
@@ -116,22 +116,25 @@ export default function AdminBlogForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
+    if (!content.trim() || content === '<p><br></p>') {
+      alert("El contenido del blog no puede estar vacío");
+      return;
+    }
+
+    if (images.length === 0) {
+      alert("Por favor selecciona al menos una imagen");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      if (images.length === 0) {
-        alert("Por favor selecciona al menos una imagen");
-        setLoading(false);
-        return;
-      }
-
-      // Convertimos TODAS las imágenes (respetando el orden del Drag & Drop)
       const base64Images = await Promise.all(
         images.map(async (img) => {
-          if (img.file) {
-            return await fileToBase64(img.file);
-          }
-          return img.src; // Si ya era base64/url, se mantiene
+          if (img.file) return await fileToBase64(img.file);
+          return img.src;
         })
       );
 
@@ -140,8 +143,8 @@ export default function AdminBlogForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          imageUrl: base64Images, // SE ENVÍA EL ARRAY COMPLETO
-          content,
+          imageUrl: base64Images,
+          content: content, // El HTML generado por ReactQuill
         }),
       });
 
@@ -150,10 +153,11 @@ export default function AdminBlogForm() {
         router.push('/');
         router.refresh();
       } else {
-        throw new Error('Error en el servidor');
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Error en el servidor');
       }
-    } catch (err) {
-      alert('Error al guardar la enseñanza');
+    } catch (err: any) {
+      alert(err.message || 'Error al guardar la enseñanza');
     } finally {
       setLoading(false);
     }
@@ -162,9 +166,9 @@ export default function AdminBlogForm() {
   const modules = useMemo(() => ({
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline'],
+      ['bold', 'italic', 'underline', 'strike'],
       [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-      ['link', 'image', 'video'],
+      ['link', 'blockquote', 'code-block'],
       ['clean']
     ],
   }), []);
@@ -257,20 +261,45 @@ export default function AdminBlogForm() {
           <input name="videoUrl" value={formData.videoUrl} onChange={handleChange} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none shadow-inner" placeholder="Link YouTube (Opcional)" />
         </div>
 
-        <div className="bg-white rounded-[24px] overflow-hidden border border-slate-200">
-          <ReactQuill theme="snow" value={content} onChange={setContent} modules={modules} placeholder="Escribe la enseñanza aquí..." />
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Contenido de la enseñanza</label>
+          <div className="bg-white rounded-[32px] overflow-hidden border border-slate-200">
+            <ReactQuill 
+              theme="snow" 
+              value={content} 
+              onChange={setContent} 
+              modules={modules} 
+              placeholder="Escribe la enseñanza aquí..."
+              className="quill-editor"
+            />
+          </div>
         </div>
 
         <button 
           type="submit" 
           disabled={loading} 
           className={`w-full py-5 rounded-[24px] font-black text-sm uppercase tracking-widest transition-all ${
-            loading ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 active:scale-[0.98]'
+            loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 active:scale-[0.98]'
           }`}
         >
           {loading ? 'Subiendo enseñanza...' : 'Publicar Enseñanza'}
         </button>
       </form>
+
+      <style jsx global>{`
+        .quill-editor .ql-container {
+          min-height: 300px;
+          font-size: 16px;
+          border-bottom-left-radius: 32px;
+          border-bottom-right-radius: 32px;
+        }
+        .quill-editor .ql-toolbar {
+          border-top-left-radius: 32px;
+          border-top-right-radius: 32px;
+          padding: 12px;
+          background: #f8fafc;
+        }
+      `}</style>
     </div>
   );
 }

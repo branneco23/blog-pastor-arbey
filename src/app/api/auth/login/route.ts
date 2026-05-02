@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { signToken } from "@/lib/jwt";
-import User from "@/models/User"; // Tu modelo de Mongoose
+import User from "@/models/User"; 
 import bcrypt from "bcryptjs"; 
 import connectDB from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
-    await connectDB(); // 1. Conectar a MongoDB
+    await connectDB(); 
     const { email, password } = await req.json();
 
     // 1. Validaciones de entrada
@@ -17,8 +17,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Buscar usuario (incluyendo password y el campo estado para el bloqueo)
-    const userFound = await User.findOne({ email }).select("+password +estado");
+    // 2. Buscar usuario
+    // IMPORTANTE: Seleccionamos 'isBlocked' para que coincida con tu panel de admin
+    const userFound = await User.findOne({ email }).select("+password +isBlocked");
 
     if (!userFound) {
       return NextResponse.json(
@@ -27,16 +28,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. VALIDACIÓN DE BLOQUEO (Crucial para el Panel de Usuarios)
-    // Comprobamos si el estado es 'bloqueado' o 'baneado' según definiste en el PUT
-    if (userFound.estado === "bloqueado" || userFound.estado === "baneado") {
+    // 3. VALIDACIÓN DE BLOQUEO (Unificada con el Panel de Admin)
+    // Usamos 'isBlocked' que es el booleano que manejas en la base de datos
+    if (userFound.isBlocked === true) {
       return NextResponse.json(
-        { error: "Esta cuenta ha sido bloqueada por el administrador." }, 
+        { error: "Esta cuenta ha sido suspendida por conducta indebida. Contacta al administrador." }, 
         { status: 403 } // Forbidden
       );
     }
 
-    // 4. Verificar si la contraseña coincide
+    // 4. Verificar contraseña
     const isMatch = await bcrypt.compare(password, userFound.password);
 
     if (!isMatch) {
@@ -46,9 +47,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5. Preparar datos del usuario para el Token y el Frontend
+    // 5. Preparar datos del usuario
     const userPayload = {
-      id: userFound._id.toString(), // Convertimos el ObjectId a string
+      id: userFound._id.toString(),
       name: userFound.name,
       role: userFound.role, 
       email: userFound.email,
@@ -56,17 +57,17 @@ export async function POST(req: Request) {
 
     const token = await signToken(userPayload);
 
-    // 6. Configurar respuesta con datos de usuario y Cookie de sesión
+    // 6. Configurar respuesta y Cookie
     const response = NextResponse.json({
       success: true,
       user: userPayload, 
     });
 
     response.cookies.set("token", token, {
-      httpOnly: true, // Seguridad: no accesible desde JS del navegador
+      httpOnly: true,
       path: "/",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 días de duración
+      maxAge: 60 * 60 * 24 * 7, 
       secure: process.env.NODE_ENV === "production",
     });
 

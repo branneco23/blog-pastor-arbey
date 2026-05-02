@@ -39,6 +39,8 @@ export default function AdminUsersPage() {
   }, []);
 
   // 3. Función corregida para cambiar el estado de bloqueo
+  // ... dentro de AdminUsersPage ...
+
   const handleToggleBlock = async (userId: string, currentStatus: boolean) => {
     const action = currentStatus ? 'desbloquear' : 'bloquear';
     if (!confirm(`¿Deseas ${action} a este usuario?`)) return;
@@ -47,15 +49,17 @@ export default function AdminUsersPage() {
       const res = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        // Enviamos el nuevo estado opuesto al actual
         body: JSON.stringify({ userId, isBlocked: !currentStatus })
       });
 
       if (res.ok) {
-        loadUsers(); // Recargamos la lista
+        // ESTO ES LO QUE DABA ERROR: Aquí sí existe 'setUsers'
+        setUsers(prev => prev.map(u =>
+          u._id === userId ? { ...u, isBlocked: !currentStatus } : u
+        ));
       }
     } catch (error) {
-      alert("Error al actualizar el estado");
+      alert("Error al comunicar con el servidor");
     }
   };
 
@@ -160,8 +164,8 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-6 text-center">
                     <span className={`inline-block text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-widest ${!user.isBlocked
-                        ? 'bg-green-50 text-green-600 border border-green-100'
-                        : 'bg-red-50 text-red-600 border border-red-100'
+                      ? 'bg-green-50 text-green-600 border border-green-100'
+                      : 'bg-red-50 text-red-600 border border-red-100'
                       }`}>
                       {user.isBlocked ? 'Acceso Restringido' : 'Usuario Activo'}
                     </span>
@@ -171,8 +175,8 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleToggleBlock(user._id, user.isBlocked)}
                         className={`p-3 rounded-2xl transition-all shadow-sm border ${!user.isBlocked
-                            ? "text-amber-500 bg-white border-amber-100 hover:bg-amber-50"
-                            : "text-green-500 bg-white border-green-100 hover:bg-green-50"
+                          ? "text-amber-500 bg-white border-amber-100 hover:bg-amber-50"
+                          : "text-green-500 bg-white border-green-100 hover:bg-green-50"
                           }`}
                         title={user.isBlocked ? "Habilitar Usuario" : "Suspender Usuario"}
                       >

@@ -9,18 +9,29 @@ import { cookies } from "next/headers";
 
 // Función auxiliar para verificar si es Admin
 async function isAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) return null;
-  const payload = await verifyToken(token);
-  return payload && payload.role === "admin" ? payload : null;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) return null;
+    
+    const payload = await verifyToken(token);
+    // Verificamos que el payload exista y tenga el rol de admin
+    return payload && payload.role === "admin" ? payload : null;
+  } catch {
+    return null;
+  }
 }
 
+// OBTENER TODOS LOS USUARIOS CON ACTIVIDAD
 export async function GET() {
   try {
     await connectDB();
+    
+    // Filtramos para no traer admins y seleccionamos campos necesarios
+    // Incluimos isBlocked para que el frontend sepa el estado actual
     const users = await User.find({ role: { $ne: "admin" } })
       .select("-password")
+      .sort({ createdAt: -1 })
       .lean();
 
     const dataFull = await Promise.all(
@@ -32,10 +43,12 @@ export async function GET() {
 
         return {
           ...user,
+          // Aseguramos que isBlocked siempre tenga un valor booleano
+          isBlocked: !!user.isBlocked,
           actividad: {
             comentarios,
             reacciones,
-            total: comentarios.length + reacciones.length,
+            total: (comentarios?.length || 0) + (reacciones?.length || 0),
           },
         };
       }),
@@ -43,54 +56,58 @@ export async function GET() {
 
     return NextResponse.json(dataFull);
   } catch (error) {
-    return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });
+    console.error("Error en GET Users:", error);
+    return NextResponse.json({ error: "Error al obtener la lista de usuarios" }, { status: 500 });
   }
 }
 
-// ACTUALIZAR ESTADO (Bloquear/Activar) - CORREGIDO
+// ACTUALIZAR ESTADO (Bloquear/Activar)
 export async function PUT(req: Request) {
   try {
     await connectDB();
 
     if (!(await isAdmin())) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "No autorizado. Se requieren permisos de administrador." }, { status: 401 });
     }
 
-    // Cambiamos 'nuevoEstado' por 'isBlocked' para que coincida con tu Frontend y DB
-    const { userId, isBlocked } = await req.json();
+    const body = await req.json();
+    const { userId, isBlocked } = body;
 
-    if (!userId || typeof isBlocked === 'undefined') {
+    // Validación estricta de datos
+    if (!userId || typeof isBlocked !== 'boolean') {
       return NextResponse.json(
-        { error: "Datos insuficientes (userId e isBlocked son requeridos)" },
+        { error: "Datos insuficientes: userId (string) e isBlocked (boolean) son requeridos" },
         { status: 400 },
       );
     }
 
-    // Actualizamos el campo 'isBlocked' que es el que usa tu base de datos
+    // Actualizamos el usuario
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { isBlocked: isBlocked }, 
-      { new: true },
+      { new: true, runValidators: true } // runValidators asegura que el esquema se respete
     ).select("-password");
 
     if (!updatedUser) {
-      return NextResponse.json(
-        { error: "Usuario no encontrado" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ 
+      success: true, 
+      message: isBlocked ? "Usuario suspendido correctamente" : "Usuario activado correctamente",
+      user: updatedUser 
+    });
+    
   } catch (error: any) {
     console.error("Error en PUT User:", error);
     return NextResponse.json(
-      { error: "Error al actualizar usuario" },
+      { error: "Error interno al actualizar el estado del usuario" },
       { status: 500 },
     );
   }
 }
 
-// ELIMINAR USUARIO Y TODA SU ACTIVIDAD
+// ELIMINAR USUARIO Y TODA SU ACTIVIDAD (Limpieza total)
 export async function DELETE(request: Request) {
   try {
     await connectDB();
@@ -102,25 +119,29 @@ export async function DELETE(request: Request) {
     const { userId } = await request.json();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "ID de usuario requerido" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "El ID de usuario es obligatorio" }, { status: 400 });
     }
 
-    await User.findByIdAndDelete(userId);
+    // Buscamos si existe antes de borrar
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return NextResponse.json({ error: "El usuario ya no existe" }, { status: 404 });
+    }
 
+    // Ejecutamos todas las eliminaciones en paralelo para mayor velocidad
     await Promise.all([
+      User.findByIdAndDelete(userId),
       Reaccion.deleteMany({ userId }),
       Comment.deleteMany({ userId }),
       Testimonio.deleteMany({ userId }),
     ]);
 
     return NextResponse.json({
-      message: "Usuario y toda su actividad eliminados permanentemente",
+      success: true,
+      message: "Usuario y toda su actividad (comentarios, reacciones, testimonios) han sido eliminados.",
     });
   } catch (error) {
-    console.error("Error al eliminar:", error);
-    return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
+    console.error("Error al eliminar usuario:", error);
+    return NextResponse.json({ error: "Error al procesar la eliminación permanente" }, { status: 500 });
   }
 }
